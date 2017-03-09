@@ -1,10 +1,10 @@
 package org.ncl.cloudcomputing.ttp;
 
 import java.util.List;
-import java.util.Map.Entry;
 
 import org.ncl.cloudcomputing.common.AmazonBucket;
 import org.ncl.cloudcomputing.common.AmazonQueue;
+import org.ncl.cloudcomputing.common.MessageStatus;
 
 import com.amazonaws.services.sqs.model.Message;
 
@@ -21,13 +21,20 @@ public class App {
 		
 		while (true) {
 			List<Message> messages = amazonTTPQueue.receiveMessages();
-					
 			for (Message message : messages) {
 				
-				for (Entry<String, String> entry : message.getAttributes().entrySet()) {
-			        System.out.println("    Name:  " + entry.getKey());
-			        System.out.println("    Value: " + entry.getValue());
-			    }
+				String strMessageStatus = message.getAttributes().get("message-status").toString();
+				Integer messageStatus = Integer.parseInt(strMessageStatus);
+				
+				if (messageStatus == MessageStatus.Alice_to_TTP.getValue()) {
+					String sigAlice = message.getAttributes().get("sig-alice").toString();
+					String docKey = message.getAttributes().get("doc-key").toString();
+					
+					
+				}
+				else if (messageStatus == MessageStatus.Bob_to_TTP.getValue()) {
+					
+				}
 				
 			}
 			

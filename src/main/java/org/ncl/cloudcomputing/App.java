@@ -1,5 +1,6 @@
 package org.ncl.cloudcomputing;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.ncl.cloudcomputing.common.AWSAuthentication;
@@ -16,6 +17,10 @@ import com.amazonaws.services.s3.model.BucketLifecycleConfiguration;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
+import com.amazonaws.services.sqs.model.DeleteMessageRequest;
+import com.amazonaws.services.sqs.model.DeleteQueueRequest;
+import com.amazonaws.services.sqs.model.Message;
+import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 
 public class App 
@@ -52,6 +57,7 @@ public class App
         
         // get base64 format here
         byte[] b = new byte[1024];
+        String str = new String(b);
         
         // Create a message queue for this example.
         String QueueName = "QueueName" + UUID.randomUUID().toString();
@@ -59,8 +65,19 @@ public class App
         String myQueueUrl = sqsExtended.createQueue(createQueueRequest).getQueueUrl();
         System.out.println("Queue created.");
         
-        SendMessageRequest myMessageRequest = new SendMessageRequest()
+        SendMessageRequest myMessageRequest = new SendMessageRequest(myQueueUrl, str);
         sqsExtended.sendMessage(myMessageRequest);
         System.out.println("Sent the message.");
+        
+        ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(myQueueUrl);
+        List<Message> messages = sqsExtended.receiveMessage(receiveMessageRequest).getMessages();
+        
+        // Delete the message, the queue, and the bucket.
+        String messageReceiptHandle = messages.get(0).getReceiptHandle();
+        sqsExtended.deleteMessage(new DeleteMessageRequest(myQueueUrl, messageReceiptHandle));
+        System.out.println("Deleted the message.");
+        
+        sqsExtended.deleteQueue(new DeleteQueueRequest(myQueueUrl));
+        System.out.println("Deleted the queue.");
     }
 }

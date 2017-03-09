@@ -9,6 +9,7 @@ import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.GetQueueUrlRequest;
 import com.amazonaws.services.sqs.model.GetQueueUrlResult;
 import com.amazonaws.services.sqs.model.Message;
+import com.amazonaws.services.sqs.model.PurgeQueueRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 
@@ -46,6 +47,11 @@ public class AmazonQueue {
 		ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(this.queueUrl);
 		receiveMessageRequest.withMessageAttributeNames("All");
 		return this.sqs.receiveMessage(receiveMessageRequest).getMessages();
+	}
+	
+	public void deleteMessages() {
+		PurgeQueueRequest request = new PurgeQueueRequest(this.queueUrl);
+		this.sqs.purgeQueue(request);
 	}
 	
 	private void createQueue() {

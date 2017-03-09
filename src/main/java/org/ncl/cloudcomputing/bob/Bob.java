@@ -1,28 +1,30 @@
-package org.ncl.cloudcomputing.alice;
+package org.ncl.cloudcomputing.bob;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import org.ncl.cloudcomputing.common.AWSBase;
 import org.ncl.cloudcomputing.common.MessageStatus;
 
+import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.MessageAttributeValue;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 
-public class Alice extends AWSBase implements Runnable {
+public class Bob extends AWSBase implements Runnable {
+
+	private Thread thread;
 	
 	private String signature;
 	
 	private ArrayList<String> transactions;
 	
-	private Thread thread;
-	
-	public Alice() {
+	public Bob() {
 		this.transactions = new ArrayList<String>(); 
 		this.signature = null;
 	}
@@ -32,30 +34,15 @@ public class Alice extends AWSBase implements Runnable {
 		return "";
 	}
 	
-	public String putObjectToBucket(String filename) {
-		File file = new File(filename);
-		
-		if(file.exists() && !file.isDirectory()) { 
-		    throw new IllegalArgumentException("the file does not exist");
-		}
-		
-		this.signature = this.produceSignature();
-		
-		return amazonBucket.storeObject(file);
-	}
-	
-	public boolean sendMessageToTTP(String docKey) {
+	private boolean sendMessageToTTP(String transactionId) {
 		try {
 			if (this.signature == null) return false;
 			
 			Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
-			
-			String transactionId = UUID.randomUUID().toString();
 
-	    	messageAttributes.put("doc-key", new MessageAttributeValue().withDataType("String").withStringValue(docKey));
-	    	messageAttributes.put("sig-alice", new MessageAttributeValue().withDataType("String").withStringValue(this.signature));
-	    	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
-	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("String").withStringListValues(MessageStatus.Alice_to_TTP.getValue().toString()));
+			messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
+	    	messageAttributes.put("sig-bob", new MessageAttributeValue().withDataType("String").withStringValue(this.signature));
+	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("String").withStringListValues(MessageStatus.Bob_to_TTP.getValue().toString()));
 	    	
 	    	SendMessageRequest request = new SendMessageRequest();
 		    request.withMessageAttributes(messageAttributes);
@@ -70,24 +57,42 @@ public class Alice extends AWSBase implements Runnable {
 
 		return true;
 	}
-
+	
 	public void run() {
-		
 		while (true) {
-			List<Message> messages = this.amazonAliceQueue.receiveMessages();
+			List<Message> messages = this.amazonBobQueue.receiveMessages();
 			for (Message message : messages) {
 				
 				String strMessageStatus = message.getAttributes().get("message-status").toString();
 				Integer messageStatus = Integer.parseInt(strMessageStatus);
 				
-				if (messageStatus == MessageStatus.TTP_to_Alice.getValue()) {
+				if (messageStatus == MessageStatus.TTP_to_Bob.getValue()) {
 					String transactionId = message.getAttributes().get("transaction-id").toString();
-					String sigBob = message.getAttributes().get("sig-bob").toString();
+					String sigAlice = message.getAttributes().get("sig-alice").toString();
+					
+					this.signature = this.produceSignature();
+					this.sendMessageToTTP(transactionId);
+					transactions.add(transactionId);
+				}
+				else if (messageStatus == MessageStatus.TTP_to_Bob_doc.getValue()) {
+					String transactionId = message.getAttributes().get("transaction-id").toString();
+					String docKey = message.getAttributes().get("docKey").toString();
+					
+					S3Object object = this.amazonBucket.getObject(docKey);
+					
+					try {
+						Files.copy(object.getObjectContent(), new File("/my/path/" + transactionId + "." + object.getObjectMetadata().getContentType()).toPath());
+						object.close();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					
 					transactions.remove(transactionId);
 				}
 			}
 			
-			this.amazonAliceQueue.deleteMessages();
+			this.amazonBobQueue.deleteMessages();
 			
 			try {
 				Thread.sleep(1000);
@@ -96,7 +101,6 @@ public class Alice extends AWSBase implements Runnable {
 				e.printStackTrace();
 			}
 		}
-		
 	}
 	
 	public void start() {

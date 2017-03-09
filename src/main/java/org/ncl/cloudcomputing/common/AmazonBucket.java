@@ -1,6 +1,7 @@
 package org.ncl.cloudcomputing.common;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -12,7 +13,10 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
+import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
 
 public class AmazonBucket {
 	
@@ -44,18 +48,21 @@ public class AmazonBucket {
 		return b;
 	}
 	
-	public String storeObject(String fileName) {
+	public String storeObject(File file) {
 		String key = this.generateKey();
-		File file = new File(fileName);
-		
-		if(file.exists() && !file.isDirectory()) { 
-		    throw new IllegalArgumentException("the file does not exist");
-		}
 		
         s3client.putObject(new PutObjectRequest(bucketName, key, file));
-        storedFiles.put(key, fileName);
+        storedFiles.put(key, file.getName());
         
         return key;
+	}
+	
+	public void deleteObject(String docKey) {
+		s3client.deleteObject(new DeleteObjectRequest(bucketName, docKey));
+	}
+	
+	public S3Object getObject(String docKey) {
+		return s3client.getObject(new GetObjectRequest(bucketName, docKey));
 	}
 	
 	private String generateKey() {

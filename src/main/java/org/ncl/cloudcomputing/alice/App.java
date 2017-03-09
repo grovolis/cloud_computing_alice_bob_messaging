@@ -9,6 +9,8 @@ public class App {
 		
 		String docKey = alice.putObjectToBucket(fileName);
     	alice.sendMessageToTTP(docKey);
+    	
+    	alice.start();
 	}
 
 }

@@ -22,6 +22,6 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="C:/Users/alper/workspace/cloud_computing_alice_bob_messaging/libraries/aws-java-sdk-1.11.100.jar"/>
+	<classpathentry kind="lib" path="libraries/aws-java-sdk-1.11.100.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

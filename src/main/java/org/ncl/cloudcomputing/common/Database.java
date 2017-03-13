@@ -2,8 +2,11 @@ package org.ncl.cloudcomputing.common;
 
 import java.util.ArrayList;
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.Table;
@@ -24,9 +27,10 @@ public class Database {
 	private static final String transactionTableSigColumn = "signature_alice";
 	private static final String transactionTableDocKeyColumn = "document_key";
 	
-	@SuppressWarnings("deprecation")
+	
 	public Database() {
-		this.dynamoDB = new DynamoDB(new AmazonDynamoDBClient(new ProfileCredentialsProvider()));
+		BasicAWSCredentials creds = new BasicAWSCredentials("AKIAJ4AF33GQN36VZPGA", "6BSToEQwvCMdfiBaSbG1kYpDL/lVPj1nMSQmGY1r"); 
+		AmazonDynamoDBClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(creds)).build();
 		this.transactionTable = this.createTransactionTable();
 	}
 	
@@ -62,10 +66,10 @@ public class Database {
 		return table;
 	}
 	
-	public void insertDataToTransactions(String transactionId, String sigAlice, String docKey) {
+	public void insertDataToTransactions(String transactionId, byte[] sigAlice, String docKey) {
 		Item item = new Item()
 				.withPrimaryKey(transactionTableIdColumn, transactionId)
-				.withString(transactionTableSigColumn, sigAlice)
+				.withBinary(transactionTableSigColumn, sigAlice)
 				.withString(transactionTableDocKeyColumn, docKey);
 		
 		this.transactionTable.putItem(item);

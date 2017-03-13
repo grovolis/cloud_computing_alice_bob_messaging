@@ -5,11 +5,14 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.UUID;
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.BucketLifecycleConfiguration;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
@@ -27,9 +30,14 @@ public class AmazonBucket {
 	
 	public AmazonBucket() {
 		this.storedFiles = new HashMap<String, String>();
-		this.s3client = new AmazonS3Client(new ProfileCredentialsProvider());
-		this.s3client.setRegion(Region.getRegion(Regions.EU_WEST_1));
 		
+		/* deprecated? */
+//		this.s3client = new AmazonS3Client(new ProfileCredentialsProvider());
+//		this.s3client.setRegion(Region.getRegion(Regions.EU_WEST_1));
+		
+		/* changed this to use non deprecated client builder */
+		BasicAWSCredentials creds = new BasicAWSCredentials("AKIAJ4AF33GQN36VZPGA", "6BSToEQwvCMdfiBaSbG1kYpDL/lVPj1nMSQmGY1r"); 
+		s3client = AmazonS3ClientBuilder.standard().withRegion(Regions.EU_WEST_1).withCredentials(new AWSStaticCredentialsProvider(creds)).build();
 		this.createBucket();
 	}
 	

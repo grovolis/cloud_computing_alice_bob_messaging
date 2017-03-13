@@ -1,5 +1,6 @@
 package org.ncl.cloudcomputing.ttp;
 
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,10 +23,13 @@ public class TTP extends AWSBase implements Runnable {
 		this.database = new Database();
 	}
 	
-	private void sendMessageToBob(String transactionId, String sigAlice) {
+	// changed this to update it for the byte[]
+	private void sendMessageToBob(String transactionId, byte[] sigAlice) {
 		Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
-
-    	messageAttributes.put("sig-alice", new MessageAttributeValue().withDataType("String").withStringValue(sigAlice));
+		
+		// changed this to update it for the byte[]
+    	messageAttributes.put("sig-alice", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(sigAlice)));
+    	
     	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
     	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("String").withStringListValues(MessageStatus.TTP_to_Bob.getValue().toString()));
     	
@@ -48,11 +52,15 @@ public class TTP extends AWSBase implements Runnable {
 	    this.amazonBobQueue.sendMessage(request);
 	}
 	
-	private void sendMessageToAlice(String transactionId, String sigBob) {
+	// changed this to update it for the byte[]
+	private void sendMessageToAlice(String transactionId, byte[] sigBob) {
 		Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
 
     	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
-    	messageAttributes.put("sig-bob", new MessageAttributeValue().withDataType("String").withStringValue(sigBob));
+    	
+    	// changed this to update it for the byte[]
+    	messageAttributes.put("sig-bob", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(sigBob)));
+    	
     	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("String").withStringListValues(MessageStatus.TTP_to_Alice.getValue().toString()));
     	
     	SendMessageRequest request = new SendMessageRequest();
@@ -77,7 +85,9 @@ public class TTP extends AWSBase implements Runnable {
 				
 				if (messageStatus == MessageStatus.Alice_to_TTP.getValue()) {
 					String transactionId = message.getAttributes().get("transaction-id").toString();
-					String sigAlice = message.getAttributes().get("sig-alice").toString();
+					
+					// changed this to update it for the byte[]
+					byte[] sigAlice = message.getAttributes().get("sig-alice").getBytes();
 					String docKey = message.getAttributes().get("doc-key").toString();
 					
 					this.database.insertDataToTransactions(transactionId, sigAlice, docKey);
@@ -85,9 +95,12 @@ public class TTP extends AWSBase implements Runnable {
 				}
 				else if (messageStatus == MessageStatus.Bob_to_TTP.getValue()) {
 					String transactionId = message.getAttributes().get("transaction-id").toString();
-					String sigBob = message.getAttributes().get("sig-bob").toString();
+					
+					// changed this to update it for the byte[]
+					byte[] sigBob = message.getAttributes().get("sig-bob").getBytes();
 					
 					// WE NEED TO KNOW IF SIGBOB SENT BY BOB IS CORRECT
+					/* to do this we need Bob's PublicKey.. could send it in the message or get Bob to transmit it to TTP another way? */
 					
 					String docKey = this.database.getDocKeyByTransactionId(transactionId);
 					this.sendDocumentKeyToBob(transactionId, docKey);

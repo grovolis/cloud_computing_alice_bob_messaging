@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.ncl.cloudcomputing.common.AWSBase;
+import org.ncl.cloudcomputing.common.Logger;
 import org.ncl.cloudcomputing.common.MessageStatus;
 
 import com.amazonaws.services.sqs.model.Message;
@@ -128,12 +129,11 @@ public class Alice extends AWSBase implements Runnable {
 	    	messageAttributes.put("doc-key", new MessageAttributeValue().withDataType("String").withStringValue(docKey));
 	    	messageAttributes.put("sig-alice", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(signature)));
 	    	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
-	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("String").withStringListValues(MessageStatus.Alice_to_TTP.getValue().toString()));
 	    	
 	    	SendMessageRequest request = new SendMessageRequest();
 		    request.withMessageAttributes(messageAttributes);
 		    request.setMessageBody("1");
-		    this.amazonTTPQueue.sendMessage(request);
+		    this.amazonTTPQueue.sendMessage(request, MessageStatus.Alice_to_TTP);
 		    
 		    transactions.add(transactionId);
 		} catch (Exception e) {
@@ -152,6 +152,8 @@ public class Alice extends AWSBase implements Runnable {
 				
 				String strMessageStatus = message.getAttributes().get("message-status").toString();
 				Integer messageStatus = Integer.parseInt(strMessageStatus);
+				
+				Logger.logReceiveMessageOnSucceed(messageStatus);
 				
 				if (messageStatus == MessageStatus.TTP_to_Alice.getValue()) {
 					String transactionId = message.getAttributes().get("transaction-id").toString();

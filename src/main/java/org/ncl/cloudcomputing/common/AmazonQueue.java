@@ -13,6 +13,7 @@ import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.GetQueueUrlRequest;
 import com.amazonaws.services.sqs.model.GetQueueUrlResult;
 import com.amazonaws.services.sqs.model.Message;
+import com.amazonaws.services.sqs.model.MessageAttributeValue;
 import com.amazonaws.services.sqs.model.PurgeQueueRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
@@ -35,27 +36,44 @@ public class AmazonQueue {
 		this.createQueue();
 	}
 	
-	public boolean sendMessage(SendMessageRequest request) {
+	public boolean sendMessage(SendMessageRequest request, MessageStatus status) {
 		try {
+			// LOG MESSAGES
+			request.addMessageAttributesEntry("message-status", new MessageAttributeValue().withDataType("String").withStringListValues(status.getValue().toString()));
+			Logger.logSendMessageOnProcess(status);
+			
 			request.withQueueUrl(this.queueUrl);
 			this.sqs.sendMessage(request);
 		} catch (Exception e) {
 			e.printStackTrace();
+			Logger.logSendMessageOnFail(status);
 			return false;
 		}
 		
+		Logger.logSendMessageOnSucceed(status);
 		return true;
 	}
 	
 	public List<Message> receiveMessages() {
-		ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(this.queueUrl);
-		receiveMessageRequest.withMessageAttributeNames("All");
-		return this.sqs.receiveMessage(receiveMessageRequest).getMessages();
+		try {
+			ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(this.queueUrl);
+			receiveMessageRequest.withMessageAttributeNames("All");
+			return this.sqs.receiveMessage(receiveMessageRequest).getMessages();		
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 	
 	public void deleteMessages() {
-		PurgeQueueRequest request = new PurgeQueueRequest(this.queueUrl);
-		this.sqs.purgeQueue(request);
+		try {
+			PurgeQueueRequest request = new PurgeQueueRequest(this.queueUrl);
+			this.sqs.purgeQueue(request);
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 	private void createQueue() {

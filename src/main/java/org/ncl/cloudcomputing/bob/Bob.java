@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.ncl.cloudcomputing.common.AWSBase;
+import org.ncl.cloudcomputing.common.Logger;
 import org.ncl.cloudcomputing.common.MessageStatus;
 
 import com.amazonaws.services.s3.model.S3Object;
@@ -123,13 +124,12 @@ public class Bob extends AWSBase implements Runnable {
 
 			messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
 	    	messageAttributes.put("sig-bob", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(signature)));
-	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("String").withStringListValues(MessageStatus.Bob_to_TTP.getValue().toString()));
 	    	messageAttributes.put("public-key", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(this.publicKey.getEncoded())));
 	    	
 	    	SendMessageRequest request = new SendMessageRequest();
 		    request.withMessageAttributes(messageAttributes);
 		    request.setMessageBody("1");
-		    this.amazonTTPQueue.sendMessage(request);
+		    this.amazonTTPQueue.sendMessage(request, MessageStatus.Bob_to_TTP);
 		    
 		    transactions.add(transactionId);
 		} catch (Exception e) {
@@ -147,6 +147,8 @@ public class Bob extends AWSBase implements Runnable {
 				
 				String strMessageStatus = message.getAttributes().get("message-status").toString();
 				Integer messageStatus = Integer.parseInt(strMessageStatus);
+				
+				Logger.logReceiveMessageOnSucceed(messageStatus);
 				
 				if (messageStatus == MessageStatus.TTP_to_Bob.getValue()) {
 					String transactionId = message.getAttributes().get("transaction-id").toString();

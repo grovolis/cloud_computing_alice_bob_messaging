@@ -126,11 +126,7 @@ public class Alice extends AWSBase implements Runnable {
 			String transactionId = UUID.randomUUID().toString();
 
 	    	messageAttributes.put("doc-key", new MessageAttributeValue().withDataType("String").withStringValue(docKey));
-	    	
-	    	// changed this to update it for the byte[]
 	    	messageAttributes.put("sig-alice", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(signature)));
-	    	
-	    	
 	    	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
 	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("String").withStringListValues(MessageStatus.Alice_to_TTP.getValue().toString()));
 	    	
@@ -159,8 +155,6 @@ public class Alice extends AWSBase implements Runnable {
 				
 				if (messageStatus == MessageStatus.TTP_to_Alice.getValue()) {
 					String transactionId = message.getAttributes().get("transaction-id").toString();
-					
-					// changed this to update it for the byte[]
 					byte[] sigBob = message.getAttributes().get("sig-bob").getBytes();
 					transactions.remove(transactionId);
 				}

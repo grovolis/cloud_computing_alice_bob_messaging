@@ -7,6 +7,18 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 @DynamoDBTable(tableName="Transactions")
 public class TransactionItem {
 
+	public TransactionItem(String id, byte[] signature, String documentKey) {
+		this.id = id;
+		this.signature = signature;
+		this.documentKey = documentKey;
+	}
+	
+	public TransactionItem(String id) {
+		this.id = id;
+	}
+	
+	public TransactionItem() { }
+	
 	private String id;
 	private byte[] signature;
 	private String documentKey;

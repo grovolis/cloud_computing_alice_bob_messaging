@@ -40,7 +40,7 @@ public class Database {
 		if (table == null) {
 			ArrayList<AttributeDefinition> attributeDefinitions= new ArrayList<AttributeDefinition>();
 			attributeDefinitions.add(new AttributeDefinition().withAttributeName(transactionTableIdColumn).withAttributeType("S"));
-			attributeDefinitions.add(new AttributeDefinition().withAttributeName(transactionTableSigColumn).withAttributeType("S"));
+			attributeDefinitions.add(new AttributeDefinition().withAttributeName(transactionTableSigColumn).withAttributeType("B"));
 			attributeDefinitions.add(new AttributeDefinition().withAttributeName(transactionTableDocKeyColumn).withAttributeType("S"));
 
 			ArrayList<KeySchemaElement> keySchema = new ArrayList<KeySchemaElement>();

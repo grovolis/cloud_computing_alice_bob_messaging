@@ -10,6 +10,7 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
+import com.amazonaws.services.sqs.model.DeleteMessageBatchRequest;
 import com.amazonaws.services.sqs.model.GetQueueUrlRequest;
 import com.amazonaws.services.sqs.model.GetQueueUrlResult;
 import com.amazonaws.services.sqs.model.Message;
@@ -38,8 +39,6 @@ public class AmazonQueue {
 	
 	public boolean sendMessage(SendMessageRequest request, MessageStatus status) {
 		try {
-			// LOG MESSAGES
-			request.addMessageAttributesEntry("message-status", new MessageAttributeValue().withDataType("String").withStringListValues(status.getValue().toString()));
 			Logger.logSendMessageOnProcess(status);
 			
 			request.withQueueUrl(this.queueUrl);
@@ -68,8 +67,8 @@ public class AmazonQueue {
 	
 	public void deleteMessages() {
 		try {
-			PurgeQueueRequest request = new PurgeQueueRequest(this.queueUrl);
-			this.sqs.purgeQueue(request);
+			DeleteMessageBatchRequest request = new DeleteMessageBatchRequest(this.queueUrl);
+			this.sqs.deleteMessageBatch(request);
 		}
 		catch (Exception e) {
 			e.printStackTrace();
@@ -88,7 +87,7 @@ public class AmazonQueue {
 			e.printStackTrace();
 		}
 
-		CreateQueueRequest createQueueRequest = new CreateQueueRequest().withQueueName(queueName);
+		CreateQueueRequest createQueueRequest = new CreateQueueRequest().withQueueName(this.queueName);
 		this.queueUrl = this.sqs.createQueue(createQueueRequest).getQueueUrl();
 	}
 }

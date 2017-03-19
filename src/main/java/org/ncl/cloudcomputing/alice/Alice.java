@@ -69,7 +69,7 @@ public class Alice extends AWSBase implements Runnable {
 		Signature rsa;
 		byte[] sig = null;
 		try {
-			rsa = Signature.getInstance("RSA");
+			rsa = Signature.getInstance("SHA256withRSA");
 			rsa.initSign(privateKey, new SecureRandom());
 			rsa.update(data);
 			sig = rsa.sign();
@@ -122,7 +122,7 @@ public class Alice extends AWSBase implements Runnable {
 		return amazonBucket.storeObject(file);
 	}
 	
-	public boolean sendMessageToTTP(String docKey) {
+	public boolean sendMessageToTTP(String docKey, String filename) {
 		try {
 			if (this.signature == null) return false;
 			
@@ -133,10 +133,13 @@ public class Alice extends AWSBase implements Runnable {
 	    	messageAttributes.put("doc-key", new MessageAttributeValue().withDataType("String").withStringValue(docKey));
 	    	messageAttributes.put("sig-alice", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(signature)));
 	    	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
+	    	messageAttributes.put("file-name", new MessageAttributeValue().withDataType("String").withStringValue(filename));
+	    	
+	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("Number").withStringValue(MessageStatus.Alice_to_TTP.getValue().toString()));
 	    	
 	    	SendMessageRequest request = new SendMessageRequest();
 		    request.withMessageAttributes(messageAttributes);
-		    request.setMessageBody("1");
+		    request.setMessageBody("Alice To TTP");
 		    this.amazonTTPQueue.sendMessage(request, MessageStatus.Alice_to_TTP);
 		    
 		    transactions.add(transactionId);
@@ -151,9 +154,12 @@ public class Alice extends AWSBase implements Runnable {
 	public void run() {
 		
 		while (true) {
+			System.out.println("Receiving messages...");
+			
 			List<Message> messages = this.amazonAliceQueue.receiveMessages();
-			for (Message message : messages) {
-				
+			
+			System.out.println(messages.size() + " messages received.");
+			for (Message message : messages) {				
 				String strMessageStatus = message.getAttributes().get("message-status").toString();
 				Integer messageStatus = Integer.parseInt(strMessageStatus);
 				
@@ -166,16 +172,16 @@ public class Alice extends AWSBase implements Runnable {
 				}
 			}
 			
-			this.amazonAliceQueue.deleteMessages();
+			if (messages.size() != 0)
+				this.amazonAliceQueue.deleteMessages();
 			
 			try {
-				Thread.sleep(1000);
+				Thread.sleep(2000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
-		
 	}
 	
 	public void start() {

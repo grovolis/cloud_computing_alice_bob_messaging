@@ -2,6 +2,7 @@ package org.ncl.cloudcomputing.bob;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -78,7 +79,7 @@ public class Bob extends AWSBase implements Runnable {
 		Signature rsa;
 		byte[] sig = null;
 		try {
-			rsa = Signature.getInstance("RSA");
+			rsa = Signature.getInstance("SHA256withRSA");
 			rsa.initSign(privateKey, new SecureRandom());
 			rsa.update(data);
 			sig = rsa.sign();
@@ -126,9 +127,11 @@ public class Bob extends AWSBase implements Runnable {
 	    	messageAttributes.put("sig-bob", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(signature)));
 	    	messageAttributes.put("public-key", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(this.publicKey.getEncoded())));
 	    	
+	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("String").withStringValue(MessageStatus.Bob_to_TTP.getValue().toString()));
+	    	
 	    	SendMessageRequest request = new SendMessageRequest();
 		    request.withMessageAttributes(messageAttributes);
-		    request.setMessageBody("1");
+		    request.setMessageBody("Bob to TTP");
 		    this.amazonTTPQueue.sendMessage(request, MessageStatus.Bob_to_TTP);
 		    
 		    transactions.add(transactionId);
@@ -142,35 +145,49 @@ public class Bob extends AWSBase implements Runnable {
 	
 	public void run() {
 		while (true) {
+			System.out.println("Receiving messages...");
+			
 			List<Message> messages = this.amazonBobQueue.receiveMessages();
+			
+			System.out.println(messages.size() + " messages received.");
+			
 			for (Message message : messages) {
 				
-				String strMessageStatus = message.getAttributes().get("message-status").toString();
+				String strMessageStatus = message.getMessageAttributes().get("message-status").getStringValue();
 				Integer messageStatus = Integer.parseInt(strMessageStatus);
 				
 				Logger.logReceiveMessageOnSucceed(messageStatus);
 				
 				if (messageStatus == MessageStatus.TTP_to_Bob.getValue()) {
-					String transactionId = message.getAttributes().get("transaction-id").toString();
-					
-					// changed this to update it for the byte[]
-					byte[] sigAlice = message.getAttributes().get("sig-alice").getBytes();
+					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
+					byte[] sigAlice = message.getMessageAttributes().get("sig-alice").getBinaryValue().array();
 					
 					/* this sig will be { sigB(sigA(H(doc))) } e.g. Bob signature over alice's signature of the hashed document*/
 					this.signature = generateRSASignature(sigAlice);
-					
 					
 					this.sendMessageToTTP(transactionId);
 					transactions.add(transactionId);
 				}
 				else if (messageStatus == MessageStatus.TTP_to_Bob_doc.getValue()) {
-					String transactionId = message.getAttributes().get("transaction-id").toString();
-					String docKey = message.getAttributes().get("docKey").toString();
+					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
+					String docKey = message.getMessageAttributes().get("doc-key").getStringValue();
+					String filename = message.getMessageAttributes().get("file-name").getStringValue();
 					
 					S3Object object = this.amazonBucket.getObject(docKey);
 					
+//					InputStream objectData = object.getObjectContent();
+//					// Process the objectData stream.
+//					
+//					
+//					try {
+//						objectData.close();
+//					} catch (IOException e) {
+//						// TODO Auto-generated catch block
+//						e.printStackTrace();
+//					}
+					
 					try {
-						Files.copy(object.getObjectContent(), new File("/my/path/" + transactionId + "." + object.getObjectMetadata().getContentType()).toPath());
+						Files.copy(object.getObjectContent(), new File(System.getProperty("user.dir") + "\\files\\" + filename).toPath());
 						object.close();
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
@@ -181,7 +198,8 @@ public class Bob extends AWSBase implements Runnable {
 				}
 			}
 			
-			this.amazonBobQueue.deleteMessages();
+			//if (messages.size() != 0)
+				//this.amazonBobQueue.deleteMessages();
 			
 			try {
 				Thread.sleep(1000);

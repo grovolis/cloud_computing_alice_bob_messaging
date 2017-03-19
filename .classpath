@@ -23,5 +23,6 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="libraries/aws-java-sdk-1.11.100.jar"/>
+	<classpathentry kind="lib" path="libraries/commons-logging-1.2.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

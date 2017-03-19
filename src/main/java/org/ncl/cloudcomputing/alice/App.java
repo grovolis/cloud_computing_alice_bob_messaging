@@ -2,7 +2,7 @@ package org.ncl.cloudcomputing.alice;
 
 public class App {
 	
-	private final static String fileName = "C:\\Users\\alper\\Desktop\\priority.png";
+	private final static String fileName = System.getProperty("user.dir") + "\\someFile.txt";
 	
 	public static void main(String[] args) {
 		Alice alice = new Alice();
@@ -10,7 +10,7 @@ public class App {
 		String docKey = alice.putObjectToBucket(fileName);
     	alice.sendMessageToTTP(docKey);
     	
-    	alice.start();
+    	//alice.start();
 	}
 
 }

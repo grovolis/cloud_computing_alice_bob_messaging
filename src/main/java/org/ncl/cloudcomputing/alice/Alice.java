@@ -107,9 +107,13 @@ public class Alice extends AWSBase implements Runnable {
 	}
 	
 	public String putObjectToBucket(String filename) {
+		
+		System.out.println("Alice put object to bucket ");
+		System.out.println("Filename: " + filename);
+		
 		File file = new File(filename);
 		
-		if(file.exists() && !file.isDirectory()) { 
+		if(!file.isFile()) { 
 		    throw new IllegalArgumentException("the file does not exist");
 		}
 		byte[] hash = hashFile(file);

@@ -1,6 +1,9 @@
 package org.ncl.cloudcomputing.ttp;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -19,6 +22,7 @@ import org.ncl.cloudcomputing.common.MessageStatus;
 import org.ncl.cloudcomputing.common.TransactionItem;
 import org.ncl.cloudcomputing.common.TransactionRepository;
 
+import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.MessageAttributeValue;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
@@ -76,6 +80,28 @@ public class TTP extends AWSBase implements Runnable {
 	    this.amazonAliceQueue.sendMessage(request, MessageStatus.TTP_to_Alice);
 	}
 	
+	public String copyDocumentToLocal(String filename, String docKey) {
+		Logger.log("TTP is copying the file to local");
+		Logger.log("Filename: " + filename);
+		
+		S3Object object = this.amazonBucket.getObject(docKey);
+		
+		String path = System.getProperty("user.dir") + "\\ttp-files\\" + filename;
+		
+		try {
+			Files.copy(object.getObjectContent(), new File(path).toPath());
+			object.close();
+			Logger.log("TTP copied the file to local");
+			
+			this.amazonBucket.deleteObject(docKey);
+		} catch (IOException e) {
+			Logger.log("TTP could not copy the file to local!!!");
+			e.printStackTrace();
+		}
+		
+		return path;
+	}
+	
 	public void start() {
 		
 		Logger.log("TTP is starting...");
@@ -105,9 +131,6 @@ public class TTP extends AWSBase implements Runnable {
 				
 				Logger.logReceiveMessageOnSucceed(messageStatus);
 				
-				
-				
-				
 				PublicKey publicKey;
 				boolean correctSignature = false;
 				Signature sig;
@@ -116,7 +139,11 @@ public class TTP extends AWSBase implements Runnable {
 					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
 					byte[] sigAlice = message.getMessageAttributes().get("sig-alice").getBinaryValue().array();
 					byte[] publicKeyAlice = message.getMessageAttributes().get("public-key").getBinaryValue().array();
+					String docKey = message.getMessageAttributes().get("doc-key").getStringValue();
+					String filename = message.getMessageAttributes().get("file-name").getStringValue();
 					
+					String path = this.copyDocumentToLocal(filename, docKey);
+					File file = new File(path);
 					
 					try {
 						publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKeyAlice));
@@ -133,10 +160,10 @@ public class TTP extends AWSBase implements Runnable {
 						e.printStackTrace();
 					}
 					
+
 					
 					
-					String docKey = message.getMessageAttributes().get("doc-key").getStringValue();
-					String filename = message.getMessageAttributes().get("file-name").getStringValue();
+					
 					
 					TransactionItem item = new TransactionItem(transactionId, sigAlice, docKey, filename);
 					TransactionItem result = this.transactionRepo.insert(item);

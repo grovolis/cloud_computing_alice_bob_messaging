@@ -142,6 +142,28 @@ public class Bob extends AWSBase implements Runnable {
 		return true;
 	}
 	
+	public String copyDocumentToLocal(String filename, String docKey) {
+		Logger.log("Bob is copying the file to local");
+		Logger.log("Filename: " + filename);
+		
+		S3Object object = this.amazonBucket.getObject(docKey);
+		
+		String path = System.getProperty("user.dir") + "\\bob-files\\" + filename;
+		
+		try {
+			Files.copy(object.getObjectContent(), new File(path).toPath());
+			object.close();
+			Logger.log("Bob copied the file to local");
+			
+			this.amazonBucket.deleteObject(docKey);
+		} catch (IOException e) {
+			Logger.log("Bob could not copy the file to local!!!");
+			e.printStackTrace();
+		}
+		
+		return path;
+	}
+	
 	public void run() {
 		while (true) {
 			Logger.log("Receiving messages...");
@@ -175,23 +197,7 @@ public class Bob extends AWSBase implements Runnable {
 					String docKey = message.getMessageAttributes().get("doc-key").getStringValue();
 					String filename = message.getMessageAttributes().get("file-name").getStringValue();
 					
-					S3Object object = this.amazonBucket.getObject(docKey);
-					
-					Logger.log("Bob is copying the file to local");
-					Logger.log("Filename: " + filename);
-					
-					try {
-						Files.copy(object.getObjectContent(), new File(System.getProperty("user.dir") + "\\files\\" + filename).toPath());
-						object.close();
-						Logger.log("Bob copied the file to local");
-						
-						this.amazonBucket.deleteObject(docKey);
-						
-						transactions.remove(transactionId);
-					} catch (IOException e) {
-						Logger.log("Bob could not copy the file to local!!!");
-						e.printStackTrace();
-					}
+					this.copyDocumentToLocal(filename, docKey);
 				}
 				
 				this.amazonBobQueue.deleteMessage(message.getReceiptHandle());

@@ -100,6 +100,7 @@ public class TTP extends AWSBase implements Runnable {
 				if (messageStatus == MessageStatus.Alice_to_TTP.getValue()) {
 					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
 					byte[] sigAlice = message.getMessageAttributes().get("sig-alice").getBinaryValue().array();
+					byte[] publicKeyAlice = message.getMessageAttributes().get("public-key").getBinaryValue().array();
 					String docKey = message.getMessageAttributes().get("doc-key").getStringValue();
 					String filename = message.getMessageAttributes().get("file-name").getStringValue();
 					

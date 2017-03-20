@@ -1,13 +1,8 @@
 package org.ncl.cloudcomputing.ttp;
 
-import java.io.File;
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Signature;
@@ -24,7 +19,6 @@ import org.ncl.cloudcomputing.common.MessageStatus;
 import org.ncl.cloudcomputing.common.TransactionItem;
 import org.ncl.cloudcomputing.common.TransactionRepository;
 
-import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.MessageAttributeValue;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
@@ -35,7 +29,11 @@ public class TTP extends AWSBase implements Runnable {
 	
 	private TransactionRepository transactionRepo;
 	
+	private HashMap<String, byte[]> publicKeys;
+	
 	public TTP() {
+		super("ttp");
+		this.publicKeys = new HashMap<String, byte[]>();
 		this.transactionRepo = new TransactionRepository();
 	}
 	
@@ -90,7 +88,7 @@ public class TTP extends AWSBase implements Runnable {
     	
     	SendMessageRequest request = new SendMessageRequest();
 	    request.withMessageAttributes(messageAttributes);
-	    request.setMessageBody("TTP to Alice");
+	    request.setMessageBody("Termination message");
 	    
 	    this.amazonAliceQueue.sendMessage(request, MessageStatus.Transaction_Terminate);
 	    this.amazonBobQueue.sendMessage(request, MessageStatus.Transaction_Terminate);
@@ -109,6 +107,9 @@ public class TTP extends AWSBase implements Runnable {
 	}
 	
 	private boolean verifySignature(byte[] sigAlice, byte[] docHash, byte[] publicKeyBytes) {
+		
+		if (publicKeyBytes == null) return false;
+		
 		PublicKey publicKey;
 		Signature sig;
 		try {
@@ -128,7 +129,6 @@ public class TTP extends AWSBase implements Runnable {
 		}
 		return false;
 	}
-	
 
 	public void run() {
 		while (true) {
@@ -151,9 +151,15 @@ public class TTP extends AWSBase implements Runnable {
 					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
 					byte[] sigAlice = message.getMessageAttributes().get("sig-alice").getBinaryValue().array();
 					byte[] docHash = message.getMessageAttributes().get("doc-hash").getBinaryValue().array();
-					byte[] publicKeyAlice = message.getMessageAttributes().get("public-key").getBinaryValue().array();
 					String docKey = message.getMessageAttributes().get("doc-key").getStringValue();
 					String filename = message.getMessageAttributes().get("file-name").getStringValue();
+					
+					Logger.log("Transaction id: " + transactionId);
+					
+					byte[] publicKeyAlice = this.publicKeys.get("Alice");
+					if (publicKeyAlice == null) {
+						Logger.log("Alice has not registered the public key");
+					}
 					
 					if(verifySignature(sigAlice, docHash, publicKeyAlice)) {
 						TransactionItem item = new TransactionItem(transactionId, sigAlice, docHash, docKey, filename);
@@ -163,6 +169,10 @@ public class TTP extends AWSBase implements Runnable {
 							this.sendMessageToBob(transactionId, sigAlice);
 					}
 					else {
+						Logger.log("Alice's signature could not be verified.");
+						Logger.log("Transaction will be terminated");
+						Logger.log("Transaction id: " + transactionId);
+						
 						this.sendTerminateMessages(transactionId);
 						this.transactionRepo.delete(transactionId);
 						this.amazonBucket.deleteObject(docKey);
@@ -171,11 +181,15 @@ public class TTP extends AWSBase implements Runnable {
 				else if (messageStatus == MessageStatus.Bob_to_TTP.getValue()) {
 					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
 					byte[] sigBob = message.getMessageAttributes().get("sig-bob").getBinaryValue().array();
-					byte[] publicKeyBob = message.getMessageAttributes().get("public-key").getBinaryValue().array();
 					
-					// WE NEED TO KNOW IF SIGBOB SENT BY BOB IS CORRECT
-					/* to do this we need Bob's PublicKey.. could send it in the message or get Bob to transmit it to TTP another way? */
+					Logger.log("Transaction id: " + transactionId);
+					
 					TransactionItem transaction = this.transactionRepo.getItemById(transactionId);
+					
+					byte[] publicKeyBob = this.publicKeys.get("Bob");
+					if (publicKeyBob == null) {
+						Logger.log("Bob has not registered the public key");
+					}
 					
 					if(verifySignature(transaction.getSignature(), transaction.getDocumentHash(), publicKeyBob)) {
 						if (transaction != null) {
@@ -185,9 +199,26 @@ public class TTP extends AWSBase implements Runnable {
 						}
 					}
 					else {
+						Logger.log("Bob's signature could not be verified.");
+						Logger.log("Transaction will be terminated");
+						Logger.log("Transaction id: " + transactionId);
+						
 						this.sendTerminateMessages(transactionId);
 						this.transactionRepo.delete(transactionId);
 						this.amazonBucket.deleteObject(transaction.getDocumentKey());
+					}
+				}
+				else if (messageStatus == MessageStatus.Register.getValue()) {
+					String client = message.getMessageAttributes().get("client-name").getStringValue();
+					byte[] publicKey = message.getMessageAttributes().get("public-key").getBinaryValue().array();
+					
+					Logger.log("Client name is " + client);
+					
+					if (this.publicKeys.containsKey(client)) {
+						Logger.log("Public key has already been registered!!!");
+					}
+					else {
+						this.publicKeys.put(client, publicKey);	
 					}
 				}
 				

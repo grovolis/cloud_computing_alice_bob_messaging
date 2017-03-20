@@ -39,6 +39,7 @@ public class Bob extends AWSBase implements Runnable {
 	private PrivateKey privateKey;
 	
 	public Bob() {
+		super("bob");
 		this.transactions = new ArrayList<String>(); 
 		try {
 			makeRSAKeyPair(2048);
@@ -114,7 +115,25 @@ public class Bob extends AWSBase implements Runnable {
 		}
 		return hash;
 	}
-	 
+	
+	public boolean registerToTTP() {
+		try {
+			Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
+
+			messageAttributes.put("client-name", new MessageAttributeValue().withDataType("String").withStringValue("Bob"));
+	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("String").withStringValue(MessageStatus.Register.getValue().toString()));
+	    	
+	    	SendMessageRequest request = new SendMessageRequest();
+		    request.withMessageAttributes(messageAttributes);
+		    request.setMessageBody("Bob to TTP (Register)");
+		    this.amazonTTPQueue.sendMessage(request, MessageStatus.Register);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+
+		return true;
+	}
 	
 	private boolean sendMessageToTTP(String transactionId) {
 		try {
@@ -142,7 +161,7 @@ public class Bob extends AWSBase implements Runnable {
 		return true;
 	}
 	
-	private String copyDocumentToLocal(String filename, String docKey) {
+	private boolean copyDocumentToLocal(String filename, String docKey) {
 		Logger.log("Bob is copying the file to local");
 		Logger.log("Filename: " + filename);
 		
@@ -159,9 +178,10 @@ public class Bob extends AWSBase implements Runnable {
 		} catch (IOException e) {
 			Logger.log("Bob could not copy the file to local!!!");
 			e.printStackTrace();
+			return false;
 		}
 		
-		return path;
+		return true;
 	}
 	
 	public void run() {
@@ -186,6 +206,8 @@ public class Bob extends AWSBase implements Runnable {
 					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
 					byte[] sigAlice = message.getMessageAttributes().get("sig-alice").getBinaryValue().array();
 					
+					Logger.log("Transaction id: " + transactionId);
+					
 					/* this sig will be { sigB(sigA(H(doc))) } e.g. Bob signature over alice's signature of the hashed document*/
 					this.signature = generateRSASignature(sigAlice);
 					
@@ -197,10 +219,13 @@ public class Bob extends AWSBase implements Runnable {
 					String docKey = message.getMessageAttributes().get("doc-key").getStringValue();
 					String filename = message.getMessageAttributes().get("file-name").getStringValue();
 					
-					this.copyDocumentToLocal(filename, docKey);
+					if (this.copyDocumentToLocal(filename, docKey)) {
+						Logger.log("The transaction has been completed successfully");
+						Logger.log("The transaction id: " + transactionId);
+					}
 				}
 				else if (messageStatus == MessageStatus.Transaction_Terminate.getValue()) {
-					String transactionId = message.getAttributes().get("transaction-id").toString();
+					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
 					transactions.remove(transactionId);
 					
 					Logger.log("The transaction was terminated by TTP because of security violation.");

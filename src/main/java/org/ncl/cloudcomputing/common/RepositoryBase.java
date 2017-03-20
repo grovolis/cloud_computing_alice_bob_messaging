@@ -24,7 +24,7 @@ public abstract class RepositoryBase<T> {
 		
 		this.client = AmazonDynamoDBClientBuilder.standard()
 				.withRegion(Regions.EU_WEST_1)
-				.withCredentials(new ProfileCredentialsProvider("default"))
+				.withCredentials(new ProfileCredentialsProvider("ttp"))
 				.build();
 		
 		this.mapper = new DynamoDBMapper(this.client);

@@ -11,10 +11,10 @@ public abstract class AWSBase {
 	protected AmazonQueue amazonAliceQueue;
 	protected AmazonQueue amazonBobQueue; 
 	
-	public AWSBase() {
-		this.amazonBucket = new AmazonBucket();
-		this.amazonTTPQueue = new AmazonQueue(ttpQueueName);
-		this.amazonAliceQueue = new AmazonQueue(aliceQueueName);
-		this.amazonBobQueue = new AmazonQueue(bobQueueName);
+	public AWSBase(String profileName) {
+		this.amazonBucket = new AmazonBucket(profileName);
+		this.amazonTTPQueue = new AmazonQueue(ttpQueueName, profileName);
+		this.amazonAliceQueue = new AmazonQueue(aliceQueueName, profileName);
+		this.amazonBobQueue = new AmazonQueue(bobQueueName, profileName);
 	}
 }

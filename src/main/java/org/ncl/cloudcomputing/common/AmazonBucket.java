@@ -29,16 +29,13 @@ public class AmazonBucket {
 	
 	private AmazonS3 s3client;
 	
-	public AmazonBucket() {
+	public AmazonBucket(String profileName) {
 		this.storedFiles = new HashMap<String, String>();
 		
 		/* deprecated? */
-		this.s3client = new AmazonS3Client(new ProfileCredentialsProvider());
+		this.s3client = new AmazonS3Client(new ProfileCredentialsProvider(profileName));
 		this.s3client.setRegion(Region.getRegion(Regions.EU_WEST_1));
 		
-		/* changed this to use non deprecated client builder */
-		//BasicAWSCredentials creds = new BasicAWSCredentials("AKIAJ4AF33GQN36VZPGA", "6BSToEQwvCMdfiBaSbG1kYpDL/lVPj1nMSQmGY1r"); 
-		//s3client = AmazonS3ClientBuilder.standard().withRegion(Regions.EU_WEST_1).withCredentials(new AWSStaticCredentialsProvider(creds)).build();
 		this.createBucket();
 	}
 	

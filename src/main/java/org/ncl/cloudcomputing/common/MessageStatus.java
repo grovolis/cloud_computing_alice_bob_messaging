@@ -6,7 +6,8 @@ public enum MessageStatus {
 	Bob_to_TTP(3),
 	TTP_to_Bob_doc(4),
 	TTP_to_Alice(5),
-	Transaction_Terminate(6);
+	Transaction_Terminate(6),
+	Register(7);
 	
 	private final Integer value;
 	

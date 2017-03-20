@@ -36,6 +36,12 @@ public class Logger {
 		else if (status == MessageStatus.TTP_to_Bob_doc) {
 			log("TTP is sending the document key to Bob...");
 		}
+		else if (status == MessageStatus.Transaction_Terminate) {
+			log("TTP is sending terminate messages to clients");
+		}
+		else if (status == MessageStatus.Register) {
+			log("Public key is being sent");
+		}
 	}
 	
 	public static void logSendMessageOnSucceed(MessageStatus status) {
@@ -53,6 +59,12 @@ public class Logger {
 		}
 		else if (status == MessageStatus.TTP_to_Bob_doc) {
 			log("TTP sent the document key to Bob");
+		}
+		else if (status == MessageStatus.Transaction_Terminate) {
+			log("TTP sent the terminate messages to clients");
+		}
+		else if (status == MessageStatus.Register) {
+			log("Public key was sent");
 		}
 	}
 	
@@ -72,6 +84,12 @@ public class Logger {
 		else if (status == MessageStatus.TTP_to_Bob_doc) {
 			log("TTP could not send the document key to Bob");
 		}
+		else if (status == MessageStatus.Transaction_Terminate) {
+			log("TTP could not send the terminate messages to clients");
+		}
+		else if (status == MessageStatus.Register) {
+			log("Public key could not be sent");
+		}
 	}
 	
 	public static void logReceiveMessageOnSucceed(Integer intStatus) {
@@ -89,6 +107,12 @@ public class Logger {
 		}
 		else if (intStatus == MessageStatus.TTP_to_Bob_doc.getValue()) {
 			log("Bob received a document key from TTP");
+		}
+		else if (intStatus == MessageStatus.Transaction_Terminate.getValue()) {
+			log("A termination message was received from TTP");
+		}
+		else if (intStatus == MessageStatus.Register.getValue()) {
+			log("Public key was received from a client");
 		}
 	}
 }

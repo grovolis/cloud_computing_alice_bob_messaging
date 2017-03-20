@@ -12,6 +12,9 @@ public class App {
 		String fileName;
 		File f;
 		
+		Alice alice = new Alice();
+		alice.registerToTTP();
+		
 		do {
 			System.out.println("Enter an existing file path to send Bob please: ");
 			fileName = scanner.nextLine();
@@ -21,8 +24,6 @@ public class App {
         
         String[] parts = fileName.split("/");
 		String file = parts[parts.length - 1];
-		
-		Alice alice = new Alice();
 		
 		String docKey = alice.putObjectToBucket(fileName);
     	alice.sendMessageToTTP(docKey, file);

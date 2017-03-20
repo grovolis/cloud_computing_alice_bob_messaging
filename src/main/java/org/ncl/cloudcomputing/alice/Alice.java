@@ -40,6 +40,7 @@ public class Alice extends AWSBase implements Runnable {
 	private byte[] hash;
 	
 	public Alice() {
+		super("alice");
 		this.transactions = new ArrayList<String>(); 
 		try {
 			makeRSAKeyPair(2048);
@@ -119,6 +120,26 @@ public class Alice extends AWSBase implements Runnable {
 		return amazonBucket.storeObject(file);
 	}
 	
+	public boolean registerToTTP() {
+		try {
+			Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
+
+			messageAttributes.put("client-name", new MessageAttributeValue().withDataType("String").withStringValue("Alice"));
+	    	messageAttributes.put("public-key", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(this.publicKey.getEncoded())));
+	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("String").withStringValue(MessageStatus.Register.getValue().toString()));
+	    	
+	    	SendMessageRequest request = new SendMessageRequest();
+		    request.withMessageAttributes(messageAttributes);
+		    request.setMessageBody("Bob to TTP (Register)");
+		    this.amazonTTPQueue.sendMessage(request, MessageStatus.Register);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+
+		return true;
+	}
+	
 	public boolean sendMessageToTTP(String docKey, String filename) {
 		try {
 			if (this.signature == null) return false;
@@ -130,7 +151,6 @@ public class Alice extends AWSBase implements Runnable {
 	    	messageAttributes.put("doc-key", new MessageAttributeValue().withDataType("String").withStringValue(docKey));
 			messageAttributes.put("doc-hash", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(this.hash)));
 	    	messageAttributes.put("sig-alice", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(signature)));
-	    	messageAttributes.put("public-key", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(this.publicKey.getEncoded())));
 	    	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
 	    	messageAttributes.put("file-name", new MessageAttributeValue().withDataType("String").withStringValue(filename));
 	    	
@@ -140,6 +160,9 @@ public class Alice extends AWSBase implements Runnable {
 		    request.withMessageAttributes(messageAttributes);
 		    request.setMessageBody("Alice To TTP");
 		    this.amazonTTPQueue.sendMessage(request, MessageStatus.Alice_to_TTP);
+		    
+		    Logger.log("A transaction was started");
+		    Logger.log("Transaction id: " + transactionId);
 		    
 		    transactions.add(transactionId);
 		} catch (Exception e) {
@@ -163,18 +186,24 @@ public class Alice extends AWSBase implements Runnable {
 				Logger.log("No message to process.");
 			
 			for (Message message : messages) {
-				String strMessageStatus = message.getAttributes().get("message-status").toString();
+				String strMessageStatus = message.getMessageAttributes().get("message-status").getStringValue();
 				Integer messageStatus = Integer.parseInt(strMessageStatus);
 				
 				Logger.logReceiveMessageOnSucceed(messageStatus);
 				
 				if (messageStatus == MessageStatus.TTP_to_Alice.getValue()) {
-					String transactionId = message.getAttributes().get("transaction-id").toString();
-					byte[] sigBob = message.getAttributes().get("sig-bob").getBytes();
+					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
+					byte[] sigBob = message.getMessageAttributes().get("sig-bob").getBinaryValue().array();
+					
+					Logger.log("Signature Bob has been received!!!");
+					
+					Logger.log("The transaction has been completed successfully");
+					Logger.log("The transaction id: " + transactionId);
+					
 					transactions.remove(transactionId);
 				}
 				else if (messageStatus == MessageStatus.Transaction_Terminate.getValue()) {
-					String transactionId = message.getAttributes().get("transaction-id").toString();
+					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
 					transactions.remove(transactionId);
 					
 					Logger.log("The transaction was terminated by TTP because of security violation.");

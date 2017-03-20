@@ -142,7 +142,7 @@ public class Bob extends AWSBase implements Runnable {
 		return true;
 	}
 	
-	public String copyDocumentToLocal(String filename, String docKey) {
+	private String copyDocumentToLocal(String filename, String docKey) {
 		Logger.log("Bob is copying the file to local");
 		Logger.log("Filename: " + filename);
 		
@@ -198,6 +198,13 @@ public class Bob extends AWSBase implements Runnable {
 					String filename = message.getMessageAttributes().get("file-name").getStringValue();
 					
 					this.copyDocumentToLocal(filename, docKey);
+				}
+				else if (messageStatus == MessageStatus.Transaction_Terminate.getValue()) {
+					String transactionId = message.getAttributes().get("transaction-id").toString();
+					transactions.remove(transactionId);
+					
+					Logger.log("The transaction was terminated by TTP because of security violation.");
+					Logger.log("The transaction id: " + transactionId);
 				}
 				
 				this.amazonBobQueue.deleteMessage(message.getReceiptHandle());

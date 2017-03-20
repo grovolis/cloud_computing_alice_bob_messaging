@@ -82,26 +82,18 @@ public class TTP extends AWSBase implements Runnable {
 	    this.amazonAliceQueue.sendMessage(request, MessageStatus.TTP_to_Alice);
 	}
 	
-	public String copyDocumentToLocal(String filename, String docKey) {
-		Logger.log("TTP is copying the file to local");
-		Logger.log("Filename: " + filename);
-		
-		S3Object object = this.amazonBucket.getObject(docKey);
-		
-		String path = System.getProperty("user.dir") + "\\ttp-files\\" + filename;
-		
-		try {
-			Files.copy(object.getObjectContent(), new File(path).toPath());
-			object.close();
-			Logger.log("TTP copied the file to local");
-			
-			this.amazonBucket.deleteObject(docKey);
-		} catch (IOException e) {
-			Logger.log("TTP could not copy the file to local!!!");
-			e.printStackTrace();
-		}
-		
-		return path;
+	private void sendTerminateMessages(String transactionId) {
+		Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
+
+    	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
+    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("Number").withStringValue(MessageStatus.Transaction_Terminate.getValue().toString()));
+    	
+    	SendMessageRequest request = new SendMessageRequest();
+	    request.withMessageAttributes(messageAttributes);
+	    request.setMessageBody("TTP to Alice");
+	    
+	    this.amazonAliceQueue.sendMessage(request, MessageStatus.Transaction_Terminate);
+	    this.amazonBobQueue.sendMessage(request, MessageStatus.Transaction_Terminate);
 	}
 	
 	public void start() {
@@ -115,32 +107,6 @@ public class TTP extends AWSBase implements Runnable {
 		
 		Logger.log("TTP started");
 	}
-	
-	
-	/**
-	 * Hashes a file
-	 * @param file to hash
-	 * @return byte[]
-	 */
-	private byte[] hashFile(File file) {
-		MessageDigest md;
-		byte[] data;
-		byte[] hash = null;
-		try {
-			md = MessageDigest.getInstance("SHA-256");
-			Path path = file.toPath();
-			data = Files.readAllBytes(path);
-			md.update(data);
-			hash = md.digest();
-		} catch (NoSuchAlgorithmException e1) {
-			e1.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return hash;
-	}
-	
-	
 	
 	private boolean verifySignature(byte[] sigAlice, byte[] docHash, byte[] publicKeyBytes) {
 		PublicKey publicKey;
@@ -197,7 +163,9 @@ public class TTP extends AWSBase implements Runnable {
 							this.sendMessageToBob(transactionId, sigAlice);
 					}
 					else {
-						// terminate the transaction
+						this.sendTerminateMessages(transactionId);
+						this.transactionRepo.delete(transactionId);
+						this.amazonBucket.deleteObject(docKey);
 					}
 				}
 				else if (messageStatus == MessageStatus.Bob_to_TTP.getValue()) {
@@ -217,9 +185,10 @@ public class TTP extends AWSBase implements Runnable {
 						}
 					}
 					else {
-						// terminate the transaction
+						this.sendTerminateMessages(transactionId);
+						this.transactionRepo.delete(transactionId);
+						this.amazonBucket.deleteObject(transaction.getDocumentKey());
 					}
-					
 				}
 				
 				this.amazonTTPQueue.deleteMessage(message.getReceiptHandle());

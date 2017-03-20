@@ -173,6 +173,13 @@ public class Alice extends AWSBase implements Runnable {
 					byte[] sigBob = message.getAttributes().get("sig-bob").getBytes();
 					transactions.remove(transactionId);
 				}
+				else if (messageStatus == MessageStatus.Transaction_Terminate.getValue()) {
+					String transactionId = message.getAttributes().get("transaction-id").toString();
+					transactions.remove(transactionId);
+					
+					Logger.log("The transaction was terminated by TTP because of security violation.");
+					Logger.log("The transaction id: " + transactionId);
+				}
 				
 				this.amazonAliceQueue.deleteMessage(message.getReceiptHandle());
 			}

@@ -66,16 +66,6 @@ public class AmazonQueue {
 		}
 	}
 	
-	public void deleteBatchMessages() {
-		try {
-			DeleteMessageBatchRequest request = new DeleteMessageBatchRequest(this.queueUrl);
-			this.sqs.deleteMessageBatch(request);
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-	
 	public void deleteMessage(String messageReceiptHandle) {
 		try {
 			Logger.log("The message was processed. It is being deleted...");
@@ -106,7 +96,7 @@ public class AmazonQueue {
 			e.printStackTrace();
 		}
 		
-		Logger.log("The queue could not find.");
+		Logger.log("The queue could not be found!!!");
 		Logger.log("New queue is being created...");
 
 		try {

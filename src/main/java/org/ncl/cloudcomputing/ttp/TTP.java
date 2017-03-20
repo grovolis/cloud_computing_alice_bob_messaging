@@ -107,7 +107,9 @@ public class TTP extends AWSBase implements Runnable {
 		Logger.log("TTP started");
 	}
 	
-	private boolean verifySignature(byte[] sigAlice, byte[] docHash, byte[] publicKeyBytes) {
+	
+	
+	private boolean verifySignature(byte[] signature, byte[] docHash, byte[] publicKeyBytes) {
 		
 		if (publicKeyBytes == null) return false;
 		
@@ -118,7 +120,7 @@ public class TTP extends AWSBase implements Runnable {
 			sig = Signature.getInstance("SHA256withRSA");
 			sig.initVerify(publicKey);
 			sig.update(docHash);
-			return sig.verify(sigAlice);
+			return sig.verify(signature);
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		} catch (InvalidKeySpecException e) {
@@ -130,6 +132,8 @@ public class TTP extends AWSBase implements Runnable {
 		}
 		return false;
 	}
+	
+	
 
 	public void run() {
 		while (true) {

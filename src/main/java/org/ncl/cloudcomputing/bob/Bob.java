@@ -94,28 +94,9 @@ public class Bob extends AWSBase implements Runnable {
 		return sig;
 	}
 	
-	/**
-	 * Hashes a file
-	 * @param file to hash
-	 * @return byte[]
-	 */
-	private byte[] hashFile(File file) {
-		MessageDigest md;
-		byte[] data;
-		byte[] hash = null;
-		try {
-			md = MessageDigest.getInstance("SHA-256");
-			Path path = file.toPath();
-			data = Files.readAllBytes(path);
-			md.update(data);
-			hash = md.digest();
-		} catch (NoSuchAlgorithmException e1) {
-			e1.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return hash;
-	}
+	
+	
+	
 	
 	public boolean registerToTTP() {
 		try {
@@ -136,6 +117,10 @@ public class Bob extends AWSBase implements Runnable {
 
 		return true;
 	}
+	
+	
+	
+	
 	
 	private boolean sendMessageToTTP(String transactionId) {
 		try {

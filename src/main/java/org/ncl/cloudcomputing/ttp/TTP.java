@@ -1,6 +1,14 @@
 package org.ncl.cloudcomputing.ttp;
 
 import java.nio.ByteBuffer;
+import java.security.InvalidKeyException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,10 +105,36 @@ public class TTP extends AWSBase implements Runnable {
 				
 				Logger.logReceiveMessageOnSucceed(messageStatus);
 				
+				
+				
+				
+				PublicKey publicKey;
+				boolean correctSignature = false;
+				Signature sig;
+				
 				if (messageStatus == MessageStatus.Alice_to_TTP.getValue()) {
 					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
 					byte[] sigAlice = message.getMessageAttributes().get("sig-alice").getBinaryValue().array();
 					byte[] publicKeyAlice = message.getMessageAttributes().get("public-key").getBinaryValue().array();
+					
+					
+					try {
+						publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKeyAlice));
+						sig = Signature.getInstance("SHA256withRSA");
+						sig.initVerify(publicKey);
+						sig.update(sigAlice);
+					} catch (NoSuchAlgorithmException e) {
+						e.printStackTrace();
+					} catch (InvalidKeySpecException e) {
+						e.printStackTrace();
+					} catch (InvalidKeyException e) {
+						e.printStackTrace();
+					} catch (SignatureException e) {
+						e.printStackTrace();
+					}
+					
+					
+					
 					String docKey = message.getMessageAttributes().get("doc-key").getStringValue();
 					String filename = message.getMessageAttributes().get("file-name").getStringValue();
 					

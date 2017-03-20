@@ -108,9 +108,6 @@ public class Alice extends AWSBase implements Runnable {
 	
 	public String putObjectToBucket(String filename) {
 		
-		System.out.println("Alice put object to bucket ");
-		System.out.println("Filename: " + filename);
-		
 		File file = new File(filename);
 		
 		if(!file.isFile()) { 
@@ -154,12 +151,16 @@ public class Alice extends AWSBase implements Runnable {
 	public void run() {
 		
 		while (true) {
-			System.out.println("Receiving messages...");
+			Logger.log("Receiving messages...");
 			
 			List<Message> messages = this.amazonAliceQueue.receiveMessages();
 			
-			System.out.println(messages.size() + " messages received.");
-			for (Message message : messages) {				
+			if (messages.size() > 0)
+				Logger.log(messages.size() + " messages received.");
+			else 
+				Logger.log("No message to process.");
+			
+			for (Message message : messages) {
 				String strMessageStatus = message.getAttributes().get("message-status").toString();
 				Integer messageStatus = Integer.parseInt(strMessageStatus);
 				
@@ -170,10 +171,10 @@ public class Alice extends AWSBase implements Runnable {
 					byte[] sigBob = message.getAttributes().get("sig-bob").getBytes();
 					transactions.remove(transactionId);
 				}
+				
+				this.amazonAliceQueue.deleteMessage(message.getReceiptHandle());
 			}
 			
-			if (messages.size() != 0)
-				this.amazonAliceQueue.deleteMessages();
 			
 			try {
 				Thread.sleep(2000);
@@ -185,9 +186,14 @@ public class Alice extends AWSBase implements Runnable {
 	}
 	
 	public void start() {
+		
+		Logger.log("Alice is getting ready to process messages...");
+		
 		if (thread == null) {
 			thread = new Thread (this, "process messages");
 			thread.start();
 	    }
+		
+		Logger.log("Alice is ready to process messages...");
 	}
 }

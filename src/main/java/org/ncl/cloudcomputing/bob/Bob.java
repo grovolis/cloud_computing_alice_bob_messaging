@@ -2,7 +2,6 @@ package org.ncl.cloudcomputing.bob;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -145,11 +144,14 @@ public class Bob extends AWSBase implements Runnable {
 	
 	public void run() {
 		while (true) {
-			System.out.println("Receiving messages...");
+			Logger.log("Receiving messages...");
 			
 			List<Message> messages = this.amazonBobQueue.receiveMessages();
 			
-			System.out.println(messages.size() + " messages received.");
+			if (messages.size() > 0)
+				Logger.log(messages.size() + " messages received.");
+			else 
+				Logger.log("No message to process.");
 			
 			for (Message message : messages) {
 				
@@ -175,34 +177,28 @@ public class Bob extends AWSBase implements Runnable {
 					
 					S3Object object = this.amazonBucket.getObject(docKey);
 					
-//					InputStream objectData = object.getObjectContent();
-//					// Process the objectData stream.
-//					
-//					
-//					try {
-//						objectData.close();
-//					} catch (IOException e) {
-//						// TODO Auto-generated catch block
-//						e.printStackTrace();
-//					}
+					Logger.log("Bob is copying the file to local");
+					Logger.log("Filename: " + filename);
 					
 					try {
 						Files.copy(object.getObjectContent(), new File(System.getProperty("user.dir") + "\\files\\" + filename).toPath());
 						object.close();
+						Logger.log("Bob copied the file to local");
+						
+						this.amazonBucket.deleteObject(docKey);
+						
+						transactions.remove(transactionId);
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
+						Logger.log("Bob could not copy the file to local!!!");
 						e.printStackTrace();
 					}
-					
-					transactions.remove(transactionId);
 				}
+				
+				this.amazonBobQueue.deleteMessage(message.getReceiptHandle());
 			}
 			
-			//if (messages.size() != 0)
-				//this.amazonBobQueue.deleteMessages();
-			
 			try {
-				Thread.sleep(1000);
+				Thread.sleep(2000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -211,9 +207,14 @@ public class Bob extends AWSBase implements Runnable {
 	}
 	
 	public void start() {
+		
+		Logger.log("Bob is getting ready to process messages...");
+		
 		if (thread == null) {
 			thread = new Thread (this, "process messages");
 			thread.start();
 	    }
+		
+		Logger.log("Bob is ready to process messages...");
 	}
 }

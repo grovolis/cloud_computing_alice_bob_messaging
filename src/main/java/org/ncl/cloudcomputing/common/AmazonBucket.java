@@ -44,17 +44,35 @@ public class AmazonBucket {
 	
 	private Bucket createBucket() {
 		Bucket b = null;
+		
+		Logger.log("Checking the bucket - " + bucketName);
+		
 		List<Bucket> buckets = s3client.listBuckets();
 		
 		if (buckets.size() == 0) {
-			b = s3client.createBucket(new CreateBucketRequest(bucketName));
 			
-			BucketLifecycleConfiguration.Rule expirationRule = new BucketLifecycleConfiguration.Rule();
-	        expirationRule.withExpirationInDays(1).withStatus("Enabled");
-	        BucketLifecycleConfiguration lifecycleConfig = new BucketLifecycleConfiguration().withRules(expirationRule);
-	        
-			s3client.setBucketLifecycleConfiguration(bucketName, lifecycleConfig);
+			Logger.log("The queue could not find.");
+			Logger.log("New queue is being created...");
+			
+			try {
+				b = s3client.createBucket(new CreateBucketRequest(bucketName));
+				
+				BucketLifecycleConfiguration.Rule expirationRule = new BucketLifecycleConfiguration.Rule();
+		        expirationRule.withExpirationInDays(1).withStatus("Enabled");
+		        BucketLifecycleConfiguration lifecycleConfig = new BucketLifecycleConfiguration().withRules(expirationRule);
+		        
+				s3client.setBucketLifecycleConfiguration(bucketName, lifecycleConfig);
+			} catch (Exception e) {
+				Logger.log("The bucket could not be created!!!");
+				e.printStackTrace();
+			}
+			
+			Logger.log("The bucket was created.");
 		}
+		else {
+			Logger.log("The bucket was found");
+		}
+		
 		
 		return b;
 	}
@@ -62,18 +80,53 @@ public class AmazonBucket {
 	public String storeObject(File file) {
 		String key = this.generateKey();
 		
-        s3client.putObject(new PutObjectRequest(bucketName, key, file));
-        storedFiles.put(key, file.getName());
+		Logger.log("Alice is sending the file to bucket...");
+		Logger.log("Filename: " + file.getName());
+		
+		try {
+			s3client.putObject(new PutObjectRequest(bucketName, key, file));
+	        storedFiles.put(key, file.getName());
+		}
+		catch (Exception e) {
+			Logger.log("The file could not be sent!!!");
+			e.printStackTrace();
+		}
         
+        Logger.log("The file was sent.");
+		
         return key;
 	}
 	
 	public void deleteObject(String docKey) {
-		s3client.deleteObject(new DeleteObjectRequest(bucketName, docKey));
+		Logger.log("The file is being deleted...");
+		Logger.log("The document key: " + docKey);
+		
+		try {
+			s3client.deleteObject(new DeleteObjectRequest(bucketName, docKey));	
+		}
+		catch (Exception e) {
+			Logger.log("The file could not be deleted!!!");
+			e.printStackTrace();
+		}
+		
+		Logger.log("The file was deleted.");
 	}
 	
 	public S3Object getObject(String docKey) {
-		return s3client.getObject(new GetObjectRequest(bucketName, docKey));
+		
+		Logger.log("The file info is being retrieved from the bucket...");
+		Logger.log("The document key: " + docKey);
+		
+		try {
+			S3Object s3Object = s3client.getObject(new GetObjectRequest(bucketName, docKey));
+			Logger.log("The file info was retrieved from the bucket!!!");
+			return s3Object;
+		}
+		catch (Exception e) {
+			Logger.log("The file info could not be retrieved from the bucket!!!");
+			e.printStackTrace();
+			return null;
+		}
 	}
 	
 	private String generateKey() {

@@ -1,79 +1,94 @@
 package org.ncl.cloudcomputing.common;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import org.ncl.cloudcomputing.common.MessageStatus;
 
 
 public class Logger {
 	
+	public static void log(String message) {
+		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		Date date = new Date();
+		
+		System.out.print(dateFormat.format(date));
+		System.out.print(" -- ");
+		System.out.print(message);
+		
+		System.out.println();
+	}
+	
 	public static void logSendMessageOnProcess(MessageStatus status) {
 		if (status == MessageStatus.Alice_to_TTP) {
-			System.out.println("Alice is sending a message to TTP...");
+			log("Alice is sending a message to TTP...");
 		}
 		else if (status == MessageStatus.Bob_to_TTP) {
-			System.out.println("Bob is sending a message to TTP...");
+			log("Bob is sending a message to TTP...");
 		}
 		else if (status == MessageStatus.TTP_to_Alice) {
-			System.out.println("TTP is sending a message to Alice...");
+			log("TTP is sending a message to Alice...");
 		}
 		else if (status == MessageStatus.TTP_to_Bob) {
-			System.out.println("TTP is sending a message to Bob...");
+			log("TTP is sending a message to Bob...");
 		}
 		else if (status == MessageStatus.TTP_to_Bob_doc) {
-			System.out.println("TTP is sending the document key to Bob...");
+			log("TTP is sending the document key to Bob...");
 		}
 	}
 	
 	public static void logSendMessageOnSucceed(MessageStatus status) {
 		if (status == MessageStatus.Alice_to_TTP) {
-			System.out.println("Alice sent the message to TTP");
+			log("Alice sent the message to TTP");
 		}
 		else if (status == MessageStatus.Bob_to_TTP) {
-			System.out.println("Bob sent the message to TTP");
+			log("Bob sent the message to TTP");
 		}
 		else if (status == MessageStatus.TTP_to_Alice) {
-			System.out.println("TTP sent the message to Alice");
+			log("TTP sent the message to Alice");
 		}
 		else if (status == MessageStatus.TTP_to_Bob) {
-			System.out.println("TTP sent the message to Bob");
+			log("TTP sent the message to Bob");
 		}
 		else if (status == MessageStatus.TTP_to_Bob_doc) {
-			System.out.println("TTP sent the document key to Bob");
+			log("TTP sent the document key to Bob");
 		}
 	}
 	
 	public static void logSendMessageOnFail(MessageStatus status) {
 		if (status == MessageStatus.Alice_to_TTP) {
-			System.out.println("Alice could not send the message to TTP");
+			log("Alice could not send the message to TTP");
 		}
 		else if (status == MessageStatus.Bob_to_TTP) {
-			System.out.println("Bob could not send the message to TTP");
+			log("Bob could not send the message to TTP");
 		}
 		else if (status == MessageStatus.TTP_to_Alice) {
-			System.out.println("TTP could not send the message to Alice");
+			log("TTP could not send the message to Alice");
 		}
 		else if (status == MessageStatus.TTP_to_Bob) {
-			System.out.println("TTP could not send the message to Bob");
+			log("TTP could not send the message to Bob");
 		}
 		else if (status == MessageStatus.TTP_to_Bob_doc) {
-			System.out.println("TTP could not send the document key to Bob");
+			log("TTP could not send the document key to Bob");
 		}
 	}
 	
 	public static void logReceiveMessageOnSucceed(Integer intStatus) {
 		if (intStatus == MessageStatus.Alice_to_TTP.getValue()) {
-			System.out.println("TTP received a message from Alice");
+			log("TTP received a message from Alice");
 		}
 		else if (intStatus == MessageStatus.Bob_to_TTP.getValue()) {
-			System.out.println("TTP received a message from Bob");
+			log("TTP received a message from Bob");
 		}
 		else if (intStatus == MessageStatus.TTP_to_Alice.getValue()) {
-			System.out.println("Alice received a message from TTP");
+			log("Alice received a message from TTP");
 		}
 		else if (intStatus == MessageStatus.TTP_to_Bob.getValue()) {
-			System.out.println("Bob received a message from TTP");
+			log("Bob received a message from TTP");
 		}
 		else if (intStatus == MessageStatus.TTP_to_Bob_doc.getValue()) {
-			System.out.println("Bob received a document key from TTP");
+			log("Bob received a document key from TTP");
 		}
 	}
 }

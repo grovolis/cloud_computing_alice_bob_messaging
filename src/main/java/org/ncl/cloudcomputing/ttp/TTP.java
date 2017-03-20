@@ -35,7 +35,7 @@ public class TTP extends AWSBase implements Runnable {
     	
     	SendMessageRequest request = new SendMessageRequest();
 	    request.withMessageAttributes(messageAttributes);
-	    request.setMessageBody("1");
+	    request.setMessageBody("TTP to Bob");
 	    this.amazonBobQueue.sendMessage(request, MessageStatus.TTP_to_Bob);
 	}
 	
@@ -50,7 +50,7 @@ public class TTP extends AWSBase implements Runnable {
     	
     	SendMessageRequest request = new SendMessageRequest();
 	    request.withMessageAttributes(messageAttributes);
-	    request.setMessageBody("1");
+	    request.setMessageBody("TTP to Bob - document");
 	    this.amazonBobQueue.sendMessage(request, MessageStatus.TTP_to_Bob_doc);
 	}
 	
@@ -64,24 +64,32 @@ public class TTP extends AWSBase implements Runnable {
     	
     	SendMessageRequest request = new SendMessageRequest();
 	    request.withMessageAttributes(messageAttributes);
-	    request.setMessageBody("1");
+	    request.setMessageBody("TTP to Alice");
 	    this.amazonAliceQueue.sendMessage(request, MessageStatus.TTP_to_Alice);
 	}
 	
 	public void start() {
+		
+		Logger.log("TTP is starting...");
+		
 		if (thread == null) {
 			thread = new Thread (this, "process messages");
 			thread.start();
 	    }
+		
+		Logger.log("TTP started");
 	}
 
 	public void run() {
 		while (true) {
-			System.out.println("Receiving messages...");
+			Logger.log("Receiving messages...");
 			
 			List<Message> messages = this.amazonTTPQueue.receiveMessages();
 			
-			System.out.println(messages.size() + " messages received.");
+			if (messages.size() > 0)
+				Logger.log(messages.size() + " messages received.");
+			else 
+				Logger.log("No message to process.");
 			
 			for (Message message : messages) {
 				String strMessageStatus = message.getMessageAttributes().get("message-status").getStringValue();
@@ -104,6 +112,7 @@ public class TTP extends AWSBase implements Runnable {
 				else if (messageStatus == MessageStatus.Bob_to_TTP.getValue()) {
 					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
 					byte[] sigBob = message.getMessageAttributes().get("sig-bob").getBinaryValue().array();
+					byte[] publicKeyBob = message.getMessageAttributes().get("public-key").getBinaryValue().array();
 					
 					// WE NEED TO KNOW IF SIGBOB SENT BY BOB IS CORRECT
 					/* to do this we need Bob's PublicKey.. could send it in the message or get Bob to transmit it to TTP another way? */
@@ -116,13 +125,12 @@ public class TTP extends AWSBase implements Runnable {
 						this.transactionRepo.delete(transactionId);
 					}
 				}
+				
+				this.amazonTTPQueue.deleteMessage(message.getReceiptHandle());
 			}
 			
-			//if (messages.size() != 0)
-				//this.amazonTTPQueue.deleteMessages();
-			
 			try {
-				Thread.sleep(1000);
+				Thread.sleep(2000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

@@ -11,6 +11,7 @@ import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.DeleteMessageBatchRequest;
+import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.GetQueueUrlRequest;
 import com.amazonaws.services.sqs.model.GetQueueUrlResult;
 import com.amazonaws.services.sqs.model.Message;
@@ -65,7 +66,7 @@ public class AmazonQueue {
 		}
 	}
 	
-	public void deleteMessages() {
+	public void deleteBatchMessages() {
 		try {
 			DeleteMessageBatchRequest request = new DeleteMessageBatchRequest(this.queueUrl);
 			this.sqs.deleteMessageBatch(request);
@@ -75,19 +76,49 @@ public class AmazonQueue {
 		}
 	}
 	
+	public void deleteMessage(String messageReceiptHandle) {
+		try {
+			Logger.log("The message was processed. It is being deleted...");
+			DeleteMessageRequest request = new DeleteMessageRequest(this.queueUrl, messageReceiptHandle);
+			this.sqs.deleteMessage(request);
+		} catch (Exception e) {
+			Logger.log("The message could not be deleted!!!");
+			e.printStackTrace();
+		}
+		
+		Logger.log("The message was deleted.");
+	}
+	
 	private void createQueue() {
+		Logger.log("Checking the queue - " + this.queueName);
+		
 		try {
 			GetQueueUrlRequest request = new GetQueueUrlRequest().withQueueName(this.queueName);
 			GetQueueUrlResult response = this.sqs.getQueueUrl(request);
 			
 			this.queueUrl = response.getQueueUrl();
 			
+			Logger.log("The queue was found");
+			Logger.log("The queue url: " + this.queueUrl);
+			
 			return;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		
+		Logger.log("The queue could not find.");
+		Logger.log("New queue is being created...");
 
-		CreateQueueRequest createQueueRequest = new CreateQueueRequest().withQueueName(this.queueName);
-		this.queueUrl = this.sqs.createQueue(createQueueRequest).getQueueUrl();
+		try {
+			CreateQueueRequest createQueueRequest = new CreateQueueRequest().withQueueName(this.queueName);
+			this.queueUrl = this.sqs.createQueue(createQueueRequest).getQueueUrl();
+		}
+		catch (Exception e) {
+			Logger.log("The queue could not be created!!!");
+			e.printStackTrace();
+		}
+		
+		Logger.log("The queue was created.");
+		Logger.log("The queue url: " + this.queueUrl);
 	}
 }

@@ -17,6 +17,7 @@ import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -121,6 +122,7 @@ public class Bob extends AWSBase implements Runnable {
 			Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
 
 			messageAttributes.put("client-name", new MessageAttributeValue().withDataType("String").withStringValue("Bob"));
+			messageAttributes.put("public-key", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(this.publicKey.getEncoded())));
 	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("String").withStringValue(MessageStatus.Register.getValue().toString()));
 	    	
 	    	SendMessageRequest request = new SendMessageRequest();
@@ -142,10 +144,12 @@ public class Bob extends AWSBase implements Runnable {
 			Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
 
 			messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
-	    	messageAttributes.put("sig-bob", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(signature)));
-	    	messageAttributes.put("public-key", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(this.publicKey.getEncoded())));
+	    	messageAttributes.put("sig-bob", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(this.signature)));
 	    	
 	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("String").withStringValue(MessageStatus.Bob_to_TTP.getValue().toString()));
+	    	
+	    	System.out.println("Sig bob: " + Arrays.toString(this.signature) );
+			System.out.println("Bob public key: " +  Arrays.toString(this.publicKey.getEncoded()));
 	    	
 	    	SendMessageRequest request = new SendMessageRequest();
 		    request.withMessageAttributes(messageAttributes);

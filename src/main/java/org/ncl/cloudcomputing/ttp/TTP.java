@@ -9,6 +9,7 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -157,9 +158,15 @@ public class TTP extends AWSBase implements Runnable {
 					Logger.log("Transaction id: " + transactionId);
 					
 					byte[] publicKeyAlice = this.publicKeys.get("Alice");
-					if (publicKeyAlice == null) {
-						Logger.log("Alice has not registered the public key");
+					if (!this.publicKeys.containsKey("Alice")) {
+						Logger.log("Alice has not registered the public key yet.");
+						Logger.log("Therefore, message will be read again.");
+						
+						continue;
 					}
+					
+					System.out.println("Sig alice: " + Arrays.toString(sigAlice));
+					System.out.println("Alice public key: " + Arrays.toString(docHash));
 					
 					if(verifySignature(sigAlice, docHash, publicKeyAlice)) {
 						TransactionItem item = new TransactionItem(transactionId, sigAlice, docHash, docKey, filename);
@@ -187,11 +194,18 @@ public class TTP extends AWSBase implements Runnable {
 					TransactionItem transaction = this.transactionRepo.getItemById(transactionId);
 					
 					byte[] publicKeyBob = this.publicKeys.get("Bob");
-					if (publicKeyBob == null) {
-						Logger.log("Bob has not registered the public key");
+					if (!this.publicKeys.containsKey("Bob")) {
+						Logger.log("Bob has not registered the public key yet.");
+						Logger.log("Therefore, message will be read again.");
+						
+						continue;
 					}
 					
-					if(verifySignature(transaction.getSignature(), transaction.getDocumentHash(), publicKeyBob)) {
+					System.out.println("Sig bob: " + Arrays.toString(sigBob));
+					System.out.println("Bob public key: " + Arrays.toString(publicKeyBob));
+					System.out.println("Hash Doc: " + Arrays.toString(transaction.getDocumentHash()));
+					
+					if(verifySignature(sigBob, transaction.getDocumentHash(), publicKeyBob)) {
 						if (transaction != null) {
 							this.sendDocumentKeyToBob(transactionId, transaction.getDocumentKey(), transaction.getFilename());
 							this.sendMessageToAlice(transactionId, sigBob);
@@ -215,11 +229,9 @@ public class TTP extends AWSBase implements Runnable {
 					Logger.log("Client name is " + client);
 					
 					if (this.publicKeys.containsKey(client)) {
-						Logger.log("Public key has already been registered!!!");
+						this.publicKeys.remove(client);
 					}
-					else {
-						this.publicKeys.put(client, publicKey);	
-					}
+					this.publicKeys.put(client, publicKey);
 				}
 				
 				this.amazonTTPQueue.deleteMessage(message.getReceiptHandle());

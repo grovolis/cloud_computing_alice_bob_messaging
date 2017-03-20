@@ -17,6 +17,7 @@ import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -155,6 +156,9 @@ public class Alice extends AWSBase implements Runnable {
 	    	messageAttributes.put("file-name", new MessageAttributeValue().withDataType("String").withStringValue(filename));
 	    	
 	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("Number").withStringValue(MessageStatus.Alice_to_TTP.getValue().toString()));
+	    	
+	    	System.out.println("Sig alice: " + Arrays.toString(this.signature) );
+			System.out.println("Alice public key: " +  Arrays.toString(this.publicKey.getEncoded()));
 	    	
 	    	SendMessageRequest request = new SendMessageRequest();
 		    request.withMessageAttributes(messageAttributes);

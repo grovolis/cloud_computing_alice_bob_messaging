@@ -37,6 +37,7 @@ public class Alice extends AWSBase implements Runnable {
 	private PublicKey publicKey;
 	private PrivateKey privateKey;
 	private byte[] signature;
+	private byte[] hash;
 	
 	public Alice() {
 		this.transactions = new ArrayList<String>(); 
@@ -91,7 +92,6 @@ public class Alice extends AWSBase implements Runnable {
 	private byte[] hashFile(File file) {
 		MessageDigest md;
 		byte[] data;
-		byte[] hash = null;
 		try {
 			md = MessageDigest.getInstance("SHA-256");
 			Path path = file.toPath();
@@ -113,8 +113,8 @@ public class Alice extends AWSBase implements Runnable {
 		if(!file.isFile()) { 
 		    throw new IllegalArgumentException("the file does not exist");
 		}
-		byte[] hash = hashFile(file);
-		signature = generateRSASignature(hash);
+		this.hash = hashFile(file);
+		signature = generateRSASignature(this.hash);
 		
 		return amazonBucket.storeObject(file);
 	}
@@ -128,6 +128,7 @@ public class Alice extends AWSBase implements Runnable {
 			String transactionId = UUID.randomUUID().toString();
 
 	    	messageAttributes.put("doc-key", new MessageAttributeValue().withDataType("String").withStringValue(docKey));
+			messageAttributes.put("doc-hash", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(this.hash)));
 	    	messageAttributes.put("sig-alice", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(signature)));
 	    	messageAttributes.put("public-key", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(this.publicKey.getEncoded())));
 	    	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));

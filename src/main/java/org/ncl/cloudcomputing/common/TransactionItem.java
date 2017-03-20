@@ -7,9 +7,10 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 @DynamoDBTable(tableName="Transactions")
 public class TransactionItem {
 
-	public TransactionItem(String id, byte[] signature, String documentKey, String filename) {
+	public TransactionItem(String id, byte[] signature, byte[] documentHash, String documentKey, String filename) {
 		this.id = id;
 		this.signature = signature;
+		this.documentHash = documentHash;
 		this.documentKey = documentKey;
 		this.filename = filename;
 	}
@@ -22,6 +23,7 @@ public class TransactionItem {
 	
 	private String id;
 	private byte[] signature;
+	private byte[] documentHash;
 	private String documentKey;
 	private String filename;
 	
@@ -32,6 +34,10 @@ public class TransactionItem {
 	@DynamoDBAttribute(attributeName="Signature")
 	public byte[] getSignature() { return signature; }
 	public void setSignature(byte[] signature) { this.signature = signature; }
+	
+	@DynamoDBAttribute(attributeName="Document_Hash")
+	public byte[] getDocumentHash() { return documentHash; }
+	public void setDocumentHash(byte[] documentHash) { this.documentHash = documentHash; }
 	
 	@DynamoDBAttribute(attributeName="Document_Key")
 	public String getDocumentKey() { return documentKey; }

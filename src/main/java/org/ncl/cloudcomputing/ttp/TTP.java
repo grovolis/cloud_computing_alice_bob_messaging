@@ -208,6 +208,8 @@ public class TTP extends AWSBase implements Runnable {
 					System.out.println("H(doc):" + Arrays.toString(transaction.getDocumentHash()));
 					System.out.println("SigB(SigA(H(doc))): " + Arrays.toString(sigBob));
 					System.out.println("Bob public key: " + Arrays.toString(publicKeyBob));
+					System.out.println("WE ARE ABOUT TO DO IT!!!!!");
+									
 					
 					if(verifySignature(sigBob, transaction.getDocumentHash(), publicKeyBob)) {
 						if (transaction != null) {

@@ -114,26 +114,6 @@ public class Bob extends AWSBase implements Runnable {
 		return true;
 	}
 	
-	public boolean registerToAlice() {
-		try {
-			Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
-
-			messageAttributes.put("client-name", new MessageAttributeValue().withDataType("String").withStringValue("Bob"));
-			messageAttributes.put("public-key", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(this.publicKey.getEncoded())));
-	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("String").withStringValue(MessageStatus.Register.getValue().toString()));
-	    	
-	    	SendMessageRequest request = new SendMessageRequest();
-		    request.withMessageAttributes(messageAttributes);
-		    request.setMessageBody("Bob to TTP (Register)");
-		    this.amazonTTPQueue.sendMessage(request, MessageStatus.Register);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return false;
-		}
-
-		return true;
-	}
-	
 	private boolean sendMessageToTTP(String transactionId) {
 		try {
 			if (this.signature == null) return false;

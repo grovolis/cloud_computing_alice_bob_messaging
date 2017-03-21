@@ -106,8 +106,6 @@ public class TTP extends AWSBase implements Runnable {
 		Logger.log("TTP started");
 	}
 	
-	
-	
 	private boolean verifySignature(byte[] signature, byte[] docHash, byte[] publicKeyBytes) {
 		
 		if (publicKeyBytes == null) return false;
@@ -168,10 +166,6 @@ public class TTP extends AWSBase implements Runnable {
 						continue;
 					}
 					
-					System.out.println("H(doc): " + Arrays.toString(docHash));
-					System.out.println("SigA(H(doc)): " + Arrays.toString(sigAlice));
-					System.out.println("Alice public key: " +  Arrays.toString(publicKeyAlice));
-					
 					if(verifySignature(sigAlice, docHash, publicKeyAlice)) {
 						TransactionItem item = new TransactionItem(transactionId, sigAlice, docHash, docKey, filename);
 						TransactionItem result = this.transactionRepo.insert(item);
@@ -200,18 +194,12 @@ public class TTP extends AWSBase implements Runnable {
 					byte[] publicKeyBob = this.publicKeys.get("Bob");
 					if (!this.publicKeys.containsKey("Bob")) {
 						Logger.log("Bob has not registered the public key yet.");
-						Logger.log("Therefore, message will be read again.");
+						Logger.log("Therefore, the message will be read again.");
 						
 						continue;
 					}
 					
-					System.out.println("H(doc):" + Arrays.toString(transaction.getDocumentHash()));
-					System.out.println("SigB(SigA(H(doc))): " + Arrays.toString(sigBob));
-					System.out.println("Bob public key: " + Arrays.toString(publicKeyBob));
-					System.out.println("WE ARE ABOUT TO DO IT!!!!!");
-									
-					
-					if(verifySignature(sigBob, transaction.getDocumentHash(), publicKeyBob)) {
+					if(verifySignature(sigBob, transaction.getSignature(), publicKeyBob)) {
 						if (transaction != null) {
 							this.sendDocumentKeyToBob(transactionId, transaction.getDocumentKey(), transaction.getFilename());
 							this.sendMessageToAlice(transactionId, sigBob);

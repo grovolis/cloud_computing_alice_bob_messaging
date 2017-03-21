@@ -125,9 +125,6 @@ public class Bob extends AWSBase implements Runnable {
 	    	
 	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("String").withStringValue(MessageStatus.Bob_to_TTP.getValue().toString()));
 	    	
-	    	System.out.println("Sig bob: " + Arrays.toString(this.signature) );
-			System.out.println("Bob public key: " +  Arrays.toString(this.publicKey.getEncoded()));
-	    	
 	    	SendMessageRequest request = new SendMessageRequest();
 		    request.withMessageAttributes(messageAttributes);
 		    request.setMessageBody("Bob to TTP");

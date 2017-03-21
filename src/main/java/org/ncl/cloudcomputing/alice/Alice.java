@@ -214,32 +214,6 @@ public class Alice extends AWSBase implements Runnable {
 					Logger.log("The transaction was terminated by TTP because of security violation.");
 					Logger.log("The transaction id: " + transactionId);
 				}
-				else if (messageStatus == MessageStatus.Register.getValue()) {
-					String client = message.getMessageAttributes().get("client-name").getStringValue();
-					byte[] publicKey = message.getMessageAttributes().get("public-key").getBinaryValue().array();
-					
-					Logger.log("Client name is " + client);
-					
-					this.bobPublicKey = publicKey;
-					
-					Scanner scanner = new Scanner(System.in);
-					
-					String fileName;
-					File f;
-					
-					do {
-						System.out.println("Enter an existing file path to send Bob please: ");
-						fileName = scanner.nextLine();
-						f = new File(fileName);
-					}
-					while (!f.isFile());
-			        
-			        String[] parts = fileName.split("/");
-					String file = parts[parts.length - 1];
-					
-					String docKey = this.putObjectToBucket(fileName);
-			    	this.sendMessageToTTP(docKey, file);
-				}
 				
 				this.amazonAliceQueue.deleteMessage(message.getReceiptHandle());
 			}

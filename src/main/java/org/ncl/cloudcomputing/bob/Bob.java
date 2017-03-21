@@ -106,7 +106,6 @@ public class Bob extends AWSBase implements Runnable {
 		    request.withMessageAttributes(messageAttributes);
 		    request.setMessageBody("Bob to TTP and Alice (Register)");
 		    this.amazonTTPQueue.sendMessage(request, MessageStatus.Register);
-		    this.amazonAliceQueue.sendMessage(request, MessageStatus.Register);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return false;

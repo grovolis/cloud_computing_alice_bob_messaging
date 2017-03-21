@@ -94,6 +94,10 @@ public class Bob extends AWSBase implements Runnable {
 		return sig;
 	}
 	
+	private byte[] produceDummySignature() {
+		return new byte[] { 1, 2, 3, 4, 5 };
+	}
+	
 	public boolean registerPublicKey() {
 		try {
 			Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();

@@ -94,10 +94,6 @@ public class Bob extends AWSBase implements Runnable {
 		return sig;
 	}
 	
-	
-	
-	
-	
 	public boolean registerToTTP() {
 		try {
 			Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
@@ -117,10 +113,6 @@ public class Bob extends AWSBase implements Runnable {
 
 		return true;
 	}
-	
-	
-	
-	
 	
 	private boolean sendMessageToTTP(String transactionId) {
 		try {
@@ -199,6 +191,10 @@ public class Bob extends AWSBase implements Runnable {
 					
 					/* this sig will be { sigB(sigA(H(doc))) } e.g. Bob signature over alice's signature of the hashed document*/
 					this.signature = generateRSASignature(sigAlice);
+					
+					System.out.println("Sig alice: " + Arrays.toString(sigAlice) );
+					System.out.println("Bob sig: " +  Arrays.toString(this.signature));
+					System.out.println("Bob public key: " +  Arrays.toString(this.publicKey.getEncoded()));
 					
 					this.sendMessageToTTP(transactionId);
 					transactions.add(transactionId);

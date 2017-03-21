@@ -96,7 +96,6 @@ public class TTP extends AWSBase implements Runnable {
 	}
 	
 	public void start() {
-		
 		Logger.log("TTP is starting...");
 		
 		if (thread == null) {
@@ -170,7 +169,7 @@ public class TTP extends AWSBase implements Runnable {
 					}
 					
 					System.out.println("Sig alice: " + Arrays.toString(sigAlice));
-					System.out.println("Alice public key: " + Arrays.toString(docHash));
+					System.out.println("Alice public key: " + Arrays.toString(publicKeyAlice));
 					
 					if(verifySignature(sigAlice, docHash, publicKeyAlice)) {
 						TransactionItem item = new TransactionItem(transactionId, sigAlice, docHash, docKey, filename);

@@ -192,8 +192,8 @@ public class Bob extends AWSBase implements Runnable {
 					/* this sig will be { sigB(sigA(H(doc))) } e.g. Bob signature over alice's signature of the hashed document*/
 					this.signature = generateRSASignature(sigAlice);
 					
-					System.out.println("Sig alice: " + Arrays.toString(sigAlice) );
-					System.out.println("Bob sig: " +  Arrays.toString(this.signature));
+					System.out.println("SigA(H(doc)): " + Arrays.toString(sigAlice) );
+					System.out.println("SigB(SigA(H(doc))): " + Arrays.toString(this.signature) );
 					System.out.println("Bob public key: " +  Arrays.toString(this.publicKey.getEncoded()));
 					
 					this.sendMessageToTTP(transactionId);

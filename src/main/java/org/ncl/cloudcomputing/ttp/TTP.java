@@ -168,8 +168,9 @@ public class TTP extends AWSBase implements Runnable {
 						continue;
 					}
 					
-					System.out.println("Sig alice: " + Arrays.toString(sigAlice));
-					System.out.println("Alice public key: " + Arrays.toString(publicKeyAlice));
+					System.out.println("H(doc): " + Arrays.toString(docHash));
+					System.out.println("SigA(H(doc)): " + Arrays.toString(sigAlice));
+					System.out.println("Alice public key: " +  Arrays.toString(publicKeyAlice));
 					
 					if(verifySignature(sigAlice, docHash, publicKeyAlice)) {
 						TransactionItem item = new TransactionItem(transactionId, sigAlice, docHash, docKey, filename);
@@ -204,9 +205,9 @@ public class TTP extends AWSBase implements Runnable {
 						continue;
 					}
 					
-					System.out.println("Sig bob: " + Arrays.toString(sigBob));
+					System.out.println("H(doc):" + Arrays.toString(transaction.getDocumentHash()));
+					System.out.println("SigB(SigA(H(doc))): " + Arrays.toString(sigBob));
 					System.out.println("Bob public key: " + Arrays.toString(publicKeyBob));
-					System.out.println("Hash Doc: " + Arrays.toString(transaction.getDocumentHash()));
 					
 					if(verifySignature(sigBob, transaction.getDocumentHash(), publicKeyBob)) {
 						if (transaction != null) {

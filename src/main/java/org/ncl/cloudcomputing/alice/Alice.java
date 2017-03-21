@@ -157,7 +157,8 @@ public class Alice extends AWSBase implements Runnable {
 	    	
 	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("Number").withStringValue(MessageStatus.Alice_to_TTP.getValue().toString()));
 	    	
-	    	System.out.println("Sig alice: " + Arrays.toString(this.signature) );
+	    	System.out.println("H(doc): " + Arrays.toString(this.hash) );
+	    	System.out.println("SigA(H(doc)): " + Arrays.toString(this.signature) );
 			System.out.println("Alice public key: " +  Arrays.toString(this.publicKey.getEncoded()));
 	    	
 	    	SendMessageRequest request = new SendMessageRequest();

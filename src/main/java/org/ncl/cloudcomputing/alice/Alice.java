@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.UUID;
 
 import org.ncl.cloudcomputing.common.AWSBase;
@@ -40,8 +41,11 @@ public class Alice extends AWSBase implements Runnable {
 	private byte[] signature;
 	private byte[] hash;
 	
+	private byte[] bobPublicKey;
+	
 	public Alice() {
 		super("alice");
+		this.bobPublicKey = null;
 		this.transactions = new ArrayList<String>(); 
 		try {
 			makeRSAKeyPair(2048);
@@ -121,7 +125,7 @@ public class Alice extends AWSBase implements Runnable {
 		return amazonBucket.storeObject(file);
 	}
 	
-	public boolean registerToTTP() {
+	public boolean registerPublicKey() {
 		try {
 			Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
 
@@ -209,6 +213,32 @@ public class Alice extends AWSBase implements Runnable {
 					
 					Logger.log("The transaction was terminated by TTP because of security violation.");
 					Logger.log("The transaction id: " + transactionId);
+				}
+				else if (messageStatus == MessageStatus.Register.getValue()) {
+					String client = message.getMessageAttributes().get("client-name").getStringValue();
+					byte[] publicKey = message.getMessageAttributes().get("public-key").getBinaryValue().array();
+					
+					Logger.log("Client name is " + client);
+					
+					this.bobPublicKey = publicKey;
+					
+					Scanner scanner = new Scanner(System.in);
+					
+					String fileName;
+					File f;
+					
+					do {
+						System.out.println("Enter an existing file path to send Bob please: ");
+						fileName = scanner.nextLine();
+						f = new File(fileName);
+					}
+					while (!f.isFile());
+			        
+			        String[] parts = fileName.split("/");
+					String file = parts[parts.length - 1];
+					
+					String docKey = this.putObjectToBucket(fileName);
+			    	this.sendMessageToTTP(docKey, file);
 				}
 				
 				this.amazonAliceQueue.deleteMessage(message.getReceiptHandle());

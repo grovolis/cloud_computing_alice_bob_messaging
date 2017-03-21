@@ -1,0 +1,11 @@
+- Polygon bölme amaçlý ana fonksiyon split_polygon_into2.
+- Yardýmcý fonksiyonlar split_polygon_to_lines, find_intersected_line_by_point.
+- split_polygon_to_lines: bir polygonu oluþturan tüm line'larý collection halinde geri döndürür.
+- find_intersected_line_by_point: verilen line collection içinde verilen point ile kesiþen line bulur.
+
+- Amaç bir polyline ile kesilen polygon'u kesildiði yerde ikiye ayýrmaktýr.
+- Kesen polyline koordinatlarý polygon dýþýna taþabildiðinden polygon ile kesiþen ilk ve son nokta tespit edilir.
+- Polygon line parçalarýna ayrýlýr ve ilk ve son noktanýn hangi alt line parçalarýyla kesiþtiði tespit edilir.
+- Polygon içerisindeki alanda kesen polyline'ýn koordinatlarý dahil edilerek alt polygon'un ilk kýsýmlarý oluþturulur.
+- Kalan yerden, polyline'ýn kestiði polygon'un line parçasýndan diðer kesilen line parçasýna polygon üzerinde gidilir ve alt polygon oluþturulur.
+- Elde edilen alt polygon ile ana polygon arasýnda fark alýnarak ikinci alt polygon elde edilir.

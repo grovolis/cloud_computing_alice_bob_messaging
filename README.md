@@ -19,7 +19,7 @@ Amazon S3: An internet scale data storage service that can handle vast amounts o
 
 Amazon SQS: An Amazon queue contains messages that can be process by clients. Upon processing the messages a client can read, write and delete messages to a queue, should their permissions allow it. AWS FIFO Queues give exactly once processing semantics, so we wouldn’t have to worry about messages not arriving or duplicates.
 
-AmazonDynamoDB:This service provides managed NoSQL Databases. NoSQL database tables are schema-less and can be used to store JSON-style documents or key-value pairs. Based on the architecture of this database type, NoSQL offers flexibility, short latency times and limitless scaling as it can adjust according to needs. This seemed like the best option for us, as we would not be locked into a schema, the flexibility was attractive.
+Amazon DynamoDB: This service provides managed NoSQL Databases. NoSQL database tables are schema-less and can be used to store JSON-style documents or key-value pairs. Based on the architecture of this database type, NoSQL offers flexibility, short latency times and limitless scaling as it can adjust according to needs. This seemed like the best option for us, as we would not be locked into a schema, the flexibility was attractive.
 
 Cryptography
 

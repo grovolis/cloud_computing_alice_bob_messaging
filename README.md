@@ -4,7 +4,7 @@ Alper Necati Akin, Ryan Halliburton, George Rovolis
 
 Aim of the project is to maintain alice & bob cryptographic messaging protocol via third trusted party (TTP) by using Amazon Cloud. 
 There are three entities (Alice, Bob, and TTP). 
-The code was implemented in Java. AWS Java SDK has been used to implement operations with the cloud. JCA libraries have been used to implement cryptographic operations.
+The code was implemented in Java. AWS Java SDK has been used to implement operations with the cloud. JCA libraries have been used to implement cryptographic operations. Figures can be found in 'Figures for Readme' issue.
 
 Background Research
 

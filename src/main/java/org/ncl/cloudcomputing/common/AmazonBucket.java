@@ -22,6 +22,10 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 
+/**
+ * @author alper
+ * The class implements operations for the bucket in the cloud.
+ */
 public class AmazonBucket {
 	
 	private static final String bucketName = "uk.ac.ncl.csc8109.team2.bucket";
@@ -32,13 +36,18 @@ public class AmazonBucket {
 	public AmazonBucket(String profileName) {
 		this.storedFiles = new HashMap<String, String>();
 		
-		/* deprecated? */
+		// Connect to s3 components with the access key.
+		// Eclipse provides storage for access keys marked with a profile name .
 		this.s3client = new AmazonS3Client(new ProfileCredentialsProvider(profileName));
 		this.s3client.setRegion(Region.getRegion(Regions.EU_WEST_1));
 		
 		this.createBucket();
 	}
 	
+	/**
+	 * This method creates a bucket in the cloud.
+	 * @return the bucket that is created
+	 */
 	private Bucket createBucket() {
 		Bucket b = null;
 		
@@ -54,6 +63,7 @@ public class AmazonBucket {
 			try {
 				b = s3client.createBucket(new CreateBucketRequest(bucketName));
 				
+				// Documents copied to the bucket are deleted after a day.
 				BucketLifecycleConfiguration.Rule expirationRule = new BucketLifecycleConfiguration.Rule();
 		        expirationRule.withExpirationInDays(1).withStatus("Enabled");
 		        BucketLifecycleConfiguration lifecycleConfig = new BucketLifecycleConfiguration().withRules(expirationRule);
@@ -74,6 +84,10 @@ public class AmazonBucket {
 		return b;
 	}
 	
+	/**
+	 * @param file: file object of the document
+	 * @return the key in the bucket to get the document
+	 */
 	public String storeObject(File file) {
 		String key = this.generateKey();
 		
@@ -94,6 +108,9 @@ public class AmazonBucket {
         return key;
 	}
 	
+	/**
+	 * @param docKey: the key in the bucket to delete the document
+	 */
 	public void deleteObject(String docKey) {
 		Logger.log("The file is being deleted...");
 		Logger.log("The document key: " + docKey);
@@ -109,6 +126,10 @@ public class AmazonBucket {
 		Logger.log("The file was deleted.");
 	}
 	
+	/**
+	 * @param docKey: the key in the bucket to get the document
+	 * @return s3object of the document.
+	 */
 	public S3Object getObject(String docKey) {
 		
 		Logger.log("The file info is being retrieved from the bucket...");
@@ -126,6 +147,9 @@ public class AmazonBucket {
 		}
 	}
 	
+	/**
+	 * @return a document key
+	 */
 	private String generateKey() {
 		return UUID.randomUUID().toString();
 	}

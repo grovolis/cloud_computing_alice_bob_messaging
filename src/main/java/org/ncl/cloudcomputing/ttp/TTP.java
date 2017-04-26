@@ -26,9 +26,7 @@ import com.amazonaws.services.sqs.model.SendMessageRequest;
 public class TTP extends AWSBase implements Runnable {
 	
 	private Thread thread;
-	
 	private TransactionRepository transactionRepo;
-	
 	private HashMap<String, byte[]> publicKeys;
 	
 	public TTP() {
@@ -37,61 +35,115 @@ public class TTP extends AWSBase implements Runnable {
 		this.transactionRepo = new TransactionRepository();
 	}
 	
-	private void sendMessageToBob(String transactionId, byte[] sigAlice) {
-		Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
+	/**
+	 * sends sigA(h(doc)) to Bob.
+	 * @param transactionId: id of the transaction
+	 * @param sigAlice: sigA(h(doc))
+	 * @return true if successful
+	 */
+	private boolean sendMessageToBob(String transactionId, byte[] sigAlice) {
+		try {
+			Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
+			
+			// sigA(h(doc))
+	    	messageAttributes.put("sig-alice", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(sigAlice)));
+	    	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
+	    	
+	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("Number").withStringValue(MessageStatus.TTP_to_Bob.getValue().toString()));
+	    	
+	    	SendMessageRequest request = new SendMessageRequest();
+		    request.withMessageAttributes(messageAttributes);
+		    request.setMessageBody("TTP to Bob");
+		    this.amazonBobQueue.sendMessage(request, MessageStatus.TTP_to_Bob);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
 		
-    	messageAttributes.put("sig-alice", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(sigAlice)));
-    	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
-    	
-    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("Number").withStringValue(MessageStatus.TTP_to_Bob.getValue().toString()));
-    	
-    	SendMessageRequest request = new SendMessageRequest();
-	    request.withMessageAttributes(messageAttributes);
-	    request.setMessageBody("TTP to Bob");
-	    this.amazonBobQueue.sendMessage(request, MessageStatus.TTP_to_Bob);
+		return true;
 	}
 	
-	private void sendDocumentKeyToBob(String transactionId, String docKey, String filename) {
-		Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
+	/**
+	 * TTP sends the document key to Bob
+	 * @param transactionId: id of the transaction
+	 * @param docKey: the key in the bucket to access the document
+	 * @param filename: name of the document
+	 * @return true if successful
+	 */
+	private boolean sendDocumentKeyToBob(String transactionId, String docKey, String filename) {
+		try {
+			Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
 
-    	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
-    	messageAttributes.put("doc-key", new MessageAttributeValue().withDataType("String").withStringValue(docKey));
-    	messageAttributes.put("file-name", new MessageAttributeValue().withDataType("String").withStringValue(filename));
-    	
-    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("Number").withStringValue(MessageStatus.TTP_to_Bob_doc.getValue().toString()));
-    	
-    	SendMessageRequest request = new SendMessageRequest();
-	    request.withMessageAttributes(messageAttributes);
-	    request.setMessageBody("TTP to Bob - document");
-	    this.amazonBobQueue.sendMessage(request, MessageStatus.TTP_to_Bob_doc);
+	    	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
+	    	messageAttributes.put("doc-key", new MessageAttributeValue().withDataType("String").withStringValue(docKey));
+	    	messageAttributes.put("file-name", new MessageAttributeValue().withDataType("String").withStringValue(filename));
+	    	
+	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("Number").withStringValue(MessageStatus.TTP_to_Bob_doc.getValue().toString()));
+	    	
+	    	SendMessageRequest request = new SendMessageRequest();
+		    request.withMessageAttributes(messageAttributes);
+		    request.setMessageBody("TTP to Bob - document");
+		    this.amazonBobQueue.sendMessage(request, MessageStatus.TTP_to_Bob_doc);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+		
+		return true;
 	}
 	
-	private void sendMessageToAlice(String transactionId, byte[] sigBob) {
-		Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
+	/**
+	 * TTP sends the signature of Bob to Alice
+	 * @param transactionId: id of the transaction
+	 * @param sigBob: sigB(sigA(h(doc)))
+	 * @return true if successful
+	 */
+	private boolean sendMessageToAlice(String transactionId, byte[] sigBob) {
+		try {
+			Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
 
-    	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
-    	messageAttributes.put("sig-bob", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(sigBob)));
-    	
-    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("Number").withStringValue(MessageStatus.TTP_to_Alice.getValue().toString()));
-    	
-    	SendMessageRequest request = new SendMessageRequest();
-	    request.withMessageAttributes(messageAttributes);
-	    request.setMessageBody("TTP to Alice");
-	    this.amazonAliceQueue.sendMessage(request, MessageStatus.TTP_to_Alice);
+	    	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
+	    	// sigB(sigA(h(doc)))
+	    	messageAttributes.put("sig-bob", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(sigBob)));
+	    	
+	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("Number").withStringValue(MessageStatus.TTP_to_Alice.getValue().toString()));
+	    	
+	    	SendMessageRequest request = new SendMessageRequest();
+		    request.withMessageAttributes(messageAttributes);
+		    request.setMessageBody("TTP to Alice");
+		    this.amazonAliceQueue.sendMessage(request, MessageStatus.TTP_to_Alice);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+		
+		return true;
 	}
 	
-	private void sendTerminateMessages(String transactionId) {
-		Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
+	/**
+	 * TTP sends termination messages to Alice and Bob
+	 * @param transactionId: id of the transaction
+	 * @return true if successful
+	 */
+	private boolean sendTerminateMessages(String transactionId) {
+		try {
+			Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
 
-    	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
-    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("Number").withStringValue(MessageStatus.Transaction_Terminate.getValue().toString()));
-    	
-    	SendMessageRequest request = new SendMessageRequest();
-	    request.withMessageAttributes(messageAttributes);
-	    request.setMessageBody("Termination message");
-	    
-	    this.amazonAliceQueue.sendMessage(request, MessageStatus.Transaction_Terminate);
-	    this.amazonBobQueue.sendMessage(request, MessageStatus.Transaction_Terminate);
+	    	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
+	    	messageAttributes.put("message-status", new MessageAttributeValue().withDataType("Number").withStringValue(MessageStatus.Transaction_Terminate.getValue().toString()));
+	    	
+	    	SendMessageRequest request = new SendMessageRequest();
+		    request.withMessageAttributes(messageAttributes);
+		    request.setMessageBody("Termination message");
+		    
+		    this.amazonAliceQueue.sendMessage(request, MessageStatus.Transaction_Terminate);
+		    this.amazonBobQueue.sendMessage(request, MessageStatus.Transaction_Terminate);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+
+		return true;
 	}
 	
 	public void start() {
@@ -105,6 +157,12 @@ public class TTP extends AWSBase implements Runnable {
 		Logger.log("TTP started");
 	}
 	
+	/**
+	 * @param signature: signature to be verified
+	 * @param docHash: h(doc)
+	 * @param publicKeyBytes: public key of the owner of the signature
+	 * @return
+	 */
 	private boolean verifySignature(byte[] signature, byte[] docHash, byte[] publicKeyBytes) {
 		
 		if (publicKeyBytes == null) return false;
@@ -128,9 +186,11 @@ public class TTP extends AWSBase implements Runnable {
 		}
 		return false;
 	}
-	
-	
 
+	/* (non-Javadoc)
+	 * @see java.lang.Runnable#run()
+	 * Receive messages in a thread with two seconds interval.
+	 */
 	public void run() {
 		while (true) {
 			Logger.log("Receiving messages...");
@@ -143,11 +203,14 @@ public class TTP extends AWSBase implements Runnable {
 				Logger.log("No message to process.");
 			
 			for (Message message : messages) {
+				// read status of a message
+				// react regarding the status 
 				String strMessageStatus = message.getMessageAttributes().get("message-status").getStringValue();
 				Integer messageStatus = Integer.parseInt(strMessageStatus);
 				
 				Logger.logReceiveMessageOnSucceed(messageStatus);
 				
+				// If Alice sends SigA(h(doc)) to TTP.
 				if (messageStatus == MessageStatus.Alice_to_TTP.getValue()) {
 					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
 					byte[] sigAlice = message.getMessageAttributes().get("sig-alice").getBinaryValue().array();
@@ -165,13 +228,16 @@ public class TTP extends AWSBase implements Runnable {
 						continue;
 					}
 					
+					// Verifies sigA(h(doc))
 					if(verifySignature(sigAlice, docHash, publicKeyAlice)) {
+						// Save the transaction info to DB to retrieve in late stages.
 						TransactionItem item = new TransactionItem(transactionId, sigAlice, docHash, docKey, filename);
 						TransactionItem result = this.transactionRepo.insert(item);
 						
 						if (result != null)
 							this.sendMessageToBob(transactionId, sigAlice);
 					}
+					// If sigA(h(doc)) is not verified, terminate the transaction
 					else {
 						Logger.log("Alice's signature could not be verified.");
 						Logger.log("Transaction will be terminated");
@@ -182,6 +248,7 @@ public class TTP extends AWSBase implements Runnable {
 						this.amazonBucket.deleteObject(docKey);
 					}
 				}
+				// If Bob sends sigB(sigA(h(doc))) to TTP
 				else if (messageStatus == MessageStatus.Bob_to_TTP.getValue()) {
 					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
 					byte[] sigBob = message.getMessageAttributes().get("sig-bob").getBinaryValue().array();
@@ -198,13 +265,16 @@ public class TTP extends AWSBase implements Runnable {
 						continue;
 					}
 					
+					// Verifies sigB(sigA(h(doc)))
 					if(verifySignature(sigBob, transaction.getSignature(), publicKeyBob)) {
 						if (transaction != null) {
-							this.sendDocumentKeyToBob(transactionId, transaction.getDocumentKey(), transaction.getFilename());
-							this.sendMessageToAlice(transactionId, sigBob);
-							this.transactionRepo.delete(transactionId);
+							// Send the document key to Bob and the signature of Bob to Alice, after then delete the record from database.
+							if (this.sendDocumentKeyToBob(transactionId, transaction.getDocumentKey(), transaction.getFilename()))
+								if (this.sendMessageToAlice(transactionId, sigBob))
+									this.transactionRepo.delete(transactionId);
 						}
 					}
+					// If sigB(sigA(h(doc))) is not verified, terminate the transaction
 					else {
 						Logger.log("Bob's signature could not be verified.");
 						Logger.log("Transaction will be terminated");
@@ -215,6 +285,7 @@ public class TTP extends AWSBase implements Runnable {
 						this.amazonBucket.deleteObject(transaction.getDocumentKey());
 					}
 				}
+				// If one of entities sends its public key.
 				else if (messageStatus == MessageStatus.Register.getValue()) {
 					String client = message.getMessageAttributes().get("client-name").getStringValue();
 					byte[] publicKey = message.getMessageAttributes().get("public-key").getBinaryValue().array();
@@ -227,6 +298,7 @@ public class TTP extends AWSBase implements Runnable {
 					this.publicKeys.put(client, publicKey);
 				}
 				
+				// clean processed messages in the queue
 				this.amazonTTPQueue.deleteMessage(message.getReceiptHandle());
 			}
 			

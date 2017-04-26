@@ -4,6 +4,10 @@ import java.util.List;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 
+/**
+ * @author alper
+ * Repository for 'transactions' table
+ */
 public class TransactionRepository extends RepositoryBase<TransactionItem> {
 
 	public TransactionRepository() {

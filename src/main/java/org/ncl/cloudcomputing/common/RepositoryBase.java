@@ -1,16 +1,16 @@
 package org.ncl.cloudcomputing.common;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 
+/**
+ * @author alper
+ * Base class for all repository classes to implement DynamoDB operations.
+ * @param <T>: Class definition of the item (table) in DynamoDB.
+ */
 public abstract class RepositoryBase<T> {
 	
 	protected DynamoDBMapper mapper;
@@ -19,9 +19,8 @@ public abstract class RepositoryBase<T> {
 	
 	public RepositoryBase() {
 		
-//		this.client = new AmazonDynamoDBClient(new ProfileCredentialsProvider());
-//		this.client.setRegion(Region.getRegion(Regions.EU_WEST_1));
-		
+		// Connect to DynamoDB components with the access key.
+		// Eclipse provides storage for access keys marked with a profile name .
 		this.client = AmazonDynamoDBClientBuilder.standard()
 				.withRegion(Regions.EU_WEST_1)
 				.withCredentials(new ProfileCredentialsProvider("ttp"))

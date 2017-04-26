@@ -2,45 +2,41 @@ package org.ncl.cloudcomputing.common;
 
 import java.util.List;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClient;
-import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
-import com.amazonaws.services.sqs.model.DeleteMessageBatchRequest;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.GetQueueUrlRequest;
 import com.amazonaws.services.sqs.model.GetQueueUrlResult;
 import com.amazonaws.services.sqs.model.Message;
-import com.amazonaws.services.sqs.model.MessageAttributeValue;
-import com.amazonaws.services.sqs.model.PurgeQueueRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 
+/**
+ * @author alper
+ * The class implements operations for the queues in the cloud.
+ */
 public class AmazonQueue {
 
 	private AmazonSQS sqs;
-	
-	private AWSCredentials credentials;
-	
 	private String queueName;
-	
 	private String queueUrl;
 	
+	/**
+	 * @param queueName: name of the queue, there are three queues. 
+	 * @param profileName: each entity (Alice, Bob, & TTP) uses different profile names because of the restrictions
+	 * e.g. Alice does not have permission for read, delete, & write on Bob's queue.
+	 */
 	public AmazonQueue(String queueName, String profileName) {
 		this.queueName = queueName;
 		
+		// Connect to Amazon SQS components with the access key.
+		// Eclipse provides storage for access keys marked with a profile name .
 		this.sqs = new AmazonSQSClient(new ProfileCredentialsProvider(profileName));
 		this.sqs.setRegion(Region.getRegion(Regions.EU_WEST_1));
-		
-//		BasicAWSCredentials creds = new BasicAWSCredentials("AKIAJ4AF33GQN36VZPGA", "6BSToEQwvCMdfiBaSbG1kYpDL/lVPj1nMSQmGY1r"); 
-//		sqs = AmazonSQSClientBuilder.standard().withRegion(Regions.EU_WEST_1).withCredentials(new AWSStaticCredentialsProvider(creds)).build();
 		
 		this.queueUrl = null;
 		this.createQueue();
@@ -87,6 +83,10 @@ public class AmazonQueue {
 		Logger.log("The message was deleted.");
 	}
 	
+	/**
+	 * Create a queue with a queue name, if it does not exist.
+	 * It gives a queue url.
+	 */
 	private void createQueue() {
 		Logger.log("Checking the queue - " + this.queueName);
 		

@@ -4,6 +4,10 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
+/**
+ * @author alper
+ * Class definition of a table in DynamoDB with Java ORM annotations.
+ */
 @DynamoDBTable(tableName="Transactions")
 public class TransactionItem {
 

@@ -32,20 +32,30 @@ import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.MessageAttributeValue;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 
+/**
+ * @author alper
+ * The class represents Alice.
+ * Alice sends a document to Bob via TTP running in the cloud and starts a transaction.
+ * Then, she listens her queue in the cloud to see messages.
+ * At the end of a transaction, Alice receives the signature of Bob via TTP.
+ */
 public class Alice extends AWSBase implements Runnable {
 	
+	// Store transactions
 	private ArrayList<String> transactions;
+	// The thread that alice receives and reacts messages.
 	private Thread thread;
+	// Alice produces a public key to verify its private key
 	private PublicKey publicKey;
+	// Alice produces a private key to have a unique signature
 	private PrivateKey privateKey;
+	// Unique signature of Alice
 	private byte[] signature;
+	// Hash of the document that will be sent.
 	private byte[] hash;
-	
-	private byte[] bobPublicKey;
 	
 	public Alice() {
 		super("alice");
-		this.bobPublicKey = null;
 		this.transactions = new ArrayList<String>(); 
 		try {
 			makeRSAKeyPair(2048);
@@ -55,6 +65,7 @@ public class Alice extends AWSBase implements Runnable {
 	}
 	
 	/**
+	 * @author ryan
 	 * Generates an RSA keypair of the specified length and assigns them as instance variables
 	 * @param keyLength int
 	 * @throws GeneralSecurityException
@@ -68,6 +79,7 @@ public class Alice extends AWSBase implements Runnable {
 	}
 	
 	/**
+	 * @author ryan
 	 * Generates a signature over some data
 	 * @param data to be signed
 	 * @return a byte[] the signature
@@ -91,6 +103,7 @@ public class Alice extends AWSBase implements Runnable {
 	}
 	
 	/**
+	 * @author ryan
 	 * Hashes a file
 	 * @param file to hash
 	 * @return byte[]
@@ -112,6 +125,12 @@ public class Alice extends AWSBase implements Runnable {
 		return hash;
 	}
 	
+	/**
+	 * this method stores a file from local memory to the bucket in the cloud. 
+	 * 
+	 * @param filename: name of the file in local
+	 * @return key of the file stored in the bucket
+	 */
 	public String putObjectToBucket(String filename) {
 		
 		File file = new File(filename);
@@ -125,6 +144,10 @@ public class Alice extends AWSBase implements Runnable {
 		return amazonBucket.storeObject(file);
 	}
 	
+	/**
+	 * This method sends public key of Alice to TTP.
+	 * @return true if successful.
+	 */
 	public boolean registerPublicKey() {
 		try {
 			Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
@@ -145,16 +168,27 @@ public class Alice extends AWSBase implements Runnable {
 		return true;
 	}
 	
+	/**
+	 * This method sends the document key and file name to TTP.
+	 * 
+	 * @param docKey: the key of the document stored in the bucket.
+	 * @param filename: name of the document  
+	 * @return true if successful
+	 */
 	public boolean sendMessageToTTP(String docKey, String filename) {
 		try {
 			if (this.signature == null) return false;
 			
 			Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
 			
+			// a transaction id is produced for each transaction to distinguish it.
 			String transactionId = UUID.randomUUID().toString();
-
+			
+			// the key to get the document from the bucket
 	    	messageAttributes.put("doc-key", new MessageAttributeValue().withDataType("String").withStringValue(docKey));
+	    	// H(doc)
 			messageAttributes.put("doc-hash", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(this.hash)));
+			// sigA(H(doc))
 	    	messageAttributes.put("sig-alice", new MessageAttributeValue().withDataType("Binary").withBinaryValue(ByteBuffer.wrap(signature)));
 	    	messageAttributes.put("transaction-id", new MessageAttributeValue().withDataType("String").withStringValue(transactionId));
 	    	messageAttributes.put("file-name", new MessageAttributeValue().withDataType("String").withStringValue(filename));
@@ -178,6 +212,11 @@ public class Alice extends AWSBase implements Runnable {
 		return true;
 	}
 
+	/* (non-Javadoc)
+	 * @see java.lang.Runnable#run()
+	 * 
+	 * Receive messages in a thread with two seconds interval.
+	 */
 	public void run() {
 		
 		while (true) {
@@ -191,11 +230,14 @@ public class Alice extends AWSBase implements Runnable {
 				Logger.log("No message to process.");
 			
 			for (Message message : messages) {
+				// read status of a message
+				// react regarding the status 
 				String strMessageStatus = message.getMessageAttributes().get("message-status").getStringValue();
 				Integer messageStatus = Integer.parseInt(strMessageStatus);
 				
 				Logger.logReceiveMessageOnSucceed(messageStatus);
 				
+				// If TTP sends SigB(SigA(h(doc)))
 				if (messageStatus == MessageStatus.TTP_to_Alice.getValue()) {
 					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
 					byte[] sigBob = message.getMessageAttributes().get("sig-bob").getBinaryValue().array();
@@ -207,6 +249,7 @@ public class Alice extends AWSBase implements Runnable {
 					
 					transactions.remove(transactionId);
 				}
+				// If TTP sends a termination message
 				else if (messageStatus == MessageStatus.Transaction_Terminate.getValue()) {
 					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
 					transactions.remove(transactionId);
@@ -215,6 +258,7 @@ public class Alice extends AWSBase implements Runnable {
 					Logger.log("The transaction id: " + transactionId);
 				}
 				
+				// clean processed messages in the queue
 				this.amazonAliceQueue.deleteMessage(message.getReceiptHandle());
 			}
 			
@@ -228,6 +272,9 @@ public class Alice extends AWSBase implements Runnable {
 		}
 	}
 	
+	/**
+	 * Starts the thread.
+	 */
 	public void start() {
 		
 		Logger.log("Alice is getting ready to process messages...");

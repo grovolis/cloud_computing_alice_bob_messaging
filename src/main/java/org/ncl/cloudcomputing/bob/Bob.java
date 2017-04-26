@@ -31,8 +31,15 @@ import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.MessageAttributeValue;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 
+/**
+ * @author alper
+ * The class represents Bob.
+ * Bob receives a document from Alice via TTP running in the cloud and sends its signature.
+ * Then, he listens her queue in the cloud to see messages.
+ */
 public class Bob extends AWSBase implements Runnable {
 
+	// see alice
 	private Thread thread;
 	private byte[] signature;
 	private ArrayList<String> transactions;
@@ -50,6 +57,7 @@ public class Bob extends AWSBase implements Runnable {
 	}
 	
 	/**
+	 * @author ryan
 	 * Allows a third party to use the clients PublicKey
 	 * @return PublicKey
 	 */
@@ -59,6 +67,7 @@ public class Bob extends AWSBase implements Runnable {
 	
 	
 	/**
+	 * @author ryan
 	 * Generates an RSA keypair of the specified length and assigns them as instance variables
 	 * @param keyLength int
 	 * @throws GeneralSecurityException
@@ -72,6 +81,7 @@ public class Bob extends AWSBase implements Runnable {
 	}
 	
 	/**
+	 * @author ryan
 	 * Generates a signature over some data
 	 * @param data to be signed
 	 * @return a byte[] the signature
@@ -94,10 +104,6 @@ public class Bob extends AWSBase implements Runnable {
 		return sig;
 	}
 	
-	private byte[] produceDummySignature() {
-		return new byte[] { 1, 2, 3, 4, 5 };
-	}
-	
 	public boolean registerPublicKey() {
 		try {
 			Map<String, MessageAttributeValue> messageAttributes = new HashMap<String, MessageAttributeValue>();
@@ -118,6 +124,11 @@ public class Bob extends AWSBase implements Runnable {
 		return true;
 	}
 	
+	/**
+	 * This methods sends SigB(SigA(h(doc))) to TTP
+	 * @param transactionId: id of the transaction 
+	 * @return true if successful
+	 */
 	private boolean sendMessageToTTP(String transactionId) {
 		try {
 			if (this.signature == null) return false;
@@ -143,6 +154,13 @@ public class Bob extends AWSBase implements Runnable {
 		return true;
 	}
 	
+	/**
+	 * This method saves the document from the bucket to Bob's local
+	 * 
+	 * @param filename: name of the document to be saved
+	 * @param docKey: the key to get the document from the bucket 
+	 * @return true if successful
+	 */
 	private boolean copyDocumentToLocal(String filename, String docKey) {
 		Logger.log("Bob is copying the file to local");
 		Logger.log("Filename: " + filename);
@@ -166,6 +184,11 @@ public class Bob extends AWSBase implements Runnable {
 		return true;
 	}
 	
+	/* (non-Javadoc)
+	 * @see java.lang.Runnable#run()
+	 * 
+	 * Receive messages in a thread with two seconds interval.
+	 */
 	public void run() {
 		while (true) {
 			Logger.log("Receiving messages...");
@@ -178,12 +201,14 @@ public class Bob extends AWSBase implements Runnable {
 				Logger.log("No message to process.");
 			
 			for (Message message : messages) {
-				
+				// read status of a message
+				// react regarding the status 
 				String strMessageStatus = message.getMessageAttributes().get("message-status").getStringValue();
 				Integer messageStatus = Integer.parseInt(strMessageStatus);
 				
 				Logger.logReceiveMessageOnSucceed(messageStatus);
 				
+				// If TTP sends SigA(h(doc))
 				if (messageStatus == MessageStatus.TTP_to_Bob.getValue()) {
 					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
 					byte[] sigAlice = message.getMessageAttributes().get("sig-alice").getBinaryValue().array();
@@ -193,13 +218,10 @@ public class Bob extends AWSBase implements Runnable {
 					/* this sig will be { sigB(sigA(H(doc))) } e.g. Bob signature over alice's signature of the hashed document*/
 					this.signature = generateRSASignature(sigAlice);
 					
-					System.out.println("SigA(H(doc)): " + Arrays.toString(sigAlice) );
-					System.out.println("SigB(SigA(H(doc))): " + Arrays.toString(this.signature) );
-					System.out.println("Bob public key: " +  Arrays.toString(this.publicKey.getEncoded()));
-					
 					this.sendMessageToTTP(transactionId);
 					transactions.add(transactionId);
 				}
+				// If TTP sends document info
 				else if (messageStatus == MessageStatus.TTP_to_Bob_doc.getValue()) {
 					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
 					String docKey = message.getMessageAttributes().get("doc-key").getStringValue();
@@ -210,6 +232,7 @@ public class Bob extends AWSBase implements Runnable {
 						Logger.log("The transaction id: " + transactionId);
 					}
 				}
+				// If TTP sends a termination message
 				else if (messageStatus == MessageStatus.Transaction_Terminate.getValue()) {
 					String transactionId = message.getMessageAttributes().get("transaction-id").getStringValue();
 					transactions.remove(transactionId);
@@ -218,6 +241,7 @@ public class Bob extends AWSBase implements Runnable {
 					Logger.log("The transaction id: " + transactionId);
 				}
 				
+				// clean processed messages in the queue
 				this.amazonBobQueue.deleteMessage(message.getReceiptHandle());
 			}
 			

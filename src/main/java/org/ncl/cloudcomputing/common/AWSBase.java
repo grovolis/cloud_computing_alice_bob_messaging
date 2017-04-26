@@ -1,5 +1,10 @@
 package org.ncl.cloudcomputing.common;
 
+/**
+ * @author alper
+ * Base class for cloud entities (Alice, Bob, & TTP)
+ * The class has access to the cloud components.
+ */
 public abstract class AWSBase {
 
 	private final static String ttpQueueName = "uk-ac-ncl-csc8109-team2-ttp-queue";
